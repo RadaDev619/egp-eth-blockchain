@@ -1,8 +1,9 @@
-import type { Prisma, ProposalEnvelopeType, Role, TenderState } from "@prisma/client";
+import type { AuditStatus, BlockchainStatus, Prisma, ProposalEnvelopeType, Role, TenderState } from "@prisma/client";
 import { appendAuditEvent, actorAuditFields } from "./auditService.js";
+import { recordKeyReleaseLogged, type RelayerTransactionResult } from "./relayer.js";
 import { assertSecureGatewayAction, SecureGatewayAction } from "./secureProcurementGateway.js";
 import { permissions, type AuthenticatedUser } from "../types/domain.js";
-import { AuthorizationError, InvalidTransitionError, NotFoundError, ValidationError } from "../utils/errors.js";
+import { AppError, AuthorizationError, InvalidTransitionError, NotFoundError, ValidationError } from "../utils/errors.js";
 import { canonicalJson, sha256Hex } from "../utils/hash.js";
 import { prisma } from "../utils/prisma.js";
 
@@ -45,6 +46,85 @@ function mockKeyMaterialReference(input: {
   requesterEmployeeHash: string;
 }) {
   return `kms://mock/releases/${sha256Hex(canonicalJson(input)).slice(0, 32)}`;
+}
+
+function keyReleaseHash(input: {
+  keyReleaseRequestId: string;
+  proposalEnvelopeId: string;
+  envelopeManifestHash: string;
+  policyId: string;
+  keyMaterialReference: string;
+}) {
+  return `0x${sha256Hex(canonicalJson(input))}`;
+}
+
+function auditStatusForRelayerStatus(status: RelayerTransactionResult["status"]): AuditStatus {
+  if (status === "MOCK_CONFIRMED") {
+    return "MOCK_CHAIN_CONFIRMED";
+  }
+
+  if (status === "CONFIRMED") {
+    return "CHAIN_CONFIRMED";
+  }
+
+  if (status === "PENDING") {
+    return "PENDING_CHAIN_CONFIRMATION";
+  }
+
+  return "CHAIN_FAILED";
+}
+
+function relayerAuditFields(relayerResult: RelayerTransactionResult) {
+  return {
+    txHash: relayerResult.txHash,
+    blockNumber: relayerResult.blockNumber ?? null,
+    chainId: relayerResult.chainId ?? null,
+    contractAddress: relayerResult.contractAddress ?? null,
+    relayerAddress: relayerResult.relayerAddress ?? null,
+    blockchainStatus: relayerResult.status as BlockchainStatus
+  };
+}
+
+function assertRelayerDidNotFail(relayerResult: RelayerTransactionResult) {
+  if (relayerResult.status !== "FAILED") {
+    return;
+  }
+
+  throw new AppError(502, "RELAYER_TRANSACTION_ERROR", "Blockchain relayer transaction failed.", {
+    txHash: relayerResult.txHash,
+    status: relayerResult.status,
+    network: relayerResult.network
+  });
+}
+
+async function createBlockchainTransaction(
+  client: KeyManagementClient,
+  input: {
+    relayerResult: RelayerTransactionResult;
+    action: string;
+    resourceType: string;
+    resourceId: string;
+    tenderId: string;
+  }
+) {
+  return client.blockchainTransaction.create({
+    data: {
+      txHash: input.relayerResult.txHash,
+      network: input.relayerResult.network,
+      chainId: input.relayerResult.chainId ?? null,
+      action: input.action,
+      resourceType: input.resourceType,
+      resourceId: input.resourceId,
+      tenderId: input.tenderId,
+      contractAddress: input.relayerResult.contractAddress ?? null,
+      relayerAddress: input.relayerResult.relayerAddress ?? null,
+      status: input.relayerResult.status as BlockchainStatus,
+      blockNumber: input.relayerResult.blockNumber ?? null,
+      explorerUrl: input.relayerResult.explorerUrl ?? null,
+      confirmedAt:
+        input.relayerResult.status === "CONFIRMED" || input.relayerResult.status === "MOCK_CONFIRMED" ? new Date() : null
+    }
+  });
 }
 
 async function findEnvelopeOrThrow(proposalEnvelopeId: string, client: KeyManagementClient = prisma) {
@@ -332,6 +412,29 @@ export async function releaseEnvelopeKey(input: ReleaseEnvelopeKeyInput, user: A
       policyId: policy.id,
       requesterEmployeeHash: request.requesterEmployeeHash
     });
+  const releaseHash = keyReleaseHash({
+    keyReleaseRequestId: request.id,
+    proposalEnvelopeId: envelope.id,
+    envelopeManifestHash: envelope.envelopeManifestHash,
+    policyId: policy.id,
+    keyMaterialReference
+  });
+  const relayerResult = await recordKeyReleaseLogged({
+    tenderId: tender.id,
+    actorEmployeeHash: user.employeeHash,
+    actorRole: user.role,
+    fromState: tender.currentState,
+    toState: tender.currentState,
+    envelopeType: envelope.envelopeType,
+    keyReleaseHash: releaseHash,
+    metadata: {
+      keyReleaseRequestId: request.id,
+      proposalEnvelopeId: envelope.id,
+      policyId: policy.id
+    }
+  });
+
+  assertRelayerDidNotFail(relayerResult);
 
   return prisma.$transaction(async (tx) => {
     const released = await tx.keyReleaseRequest.update({
@@ -345,12 +448,19 @@ export async function releaseEnvelopeKey(input: ReleaseEnvelopeKeyInput, user: A
       }
     });
 
+    await createBlockchainTransaction(tx, {
+      relayerResult,
+      action: "KEY_RELEASE_LOGGED",
+      resourceType: "KEY_RELEASE_REQUEST",
+      resourceId: released.id,
+      tenderId: tender.id
+    });
     await appendAuditEvent(
       {
         ...actorAuditFields(user),
         ...requestAuditFields(context),
         action: "ENVELOPE_KEY_RELEASED",
-        status: "SUCCESS",
+        status: auditStatusForRelayerStatus(relayerResult.status),
         resourceType: "KEY_RELEASE_REQUEST",
         resourceId: released.id,
         tenderId: tender.id,
@@ -359,12 +469,14 @@ export async function releaseEnvelopeKey(input: ReleaseEnvelopeKeyInput, user: A
         permissionResult: "ALLOWED",
         transitionAllowed: true,
         documentHash: envelope.envelopeManifestHash,
+        ...relayerAuditFields(relayerResult),
         metadata: {
           proposalEnvelopeId: envelope.id,
           envelopeType: envelope.envelopeType,
           requesterEmployeeHash: request.requesterEmployeeHash,
           requesterRole: request.requesterRole,
           policyId: policy.id,
+          keyReleaseHash: releaseHash,
           keyMaterialReference
         }
       },

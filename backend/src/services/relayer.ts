@@ -50,6 +50,44 @@ export type TamperingDetectedRelayerInput = RelayerBaseInput & {
   observedDocumentHash: string;
 };
 
+export type TenderManifestProofRelayerInput = RelayerBaseInput & {
+  manifestHash: string;
+};
+
+export type ProposalPackageProofRelayerInput = RelayerBaseInput & {
+  packageHash: string;
+};
+
+export type ProposalEnvelopeProofRelayerInput = RelayerBaseInput & {
+  envelopeType: string;
+  envelopeManifestHash: string;
+};
+
+export type TenderClosedProofRelayerInput = RelayerBaseInput & {
+  closureHash: string;
+};
+
+export type KeyReleaseProofRelayerInput = RelayerBaseInput & {
+  envelopeType: string;
+  keyReleaseHash: string;
+};
+
+export type EvaluationReportProofRelayerInput = RelayerBaseInput & {
+  reportHash: string;
+};
+
+export type AwardRecommendedProofRelayerInput = RelayerBaseInput & {
+  recommendationHash: string;
+};
+
+export type AwardApprovedProofRelayerInput = RelayerBaseInput & {
+  approvalHash: string;
+};
+
+export type ContractHashCommittedRelayerInput = RelayerBaseInput & {
+  contractHash: string;
+};
+
 type DeploymentArtifact = {
   chainId?: number;
   relayerAddress?: string;
@@ -89,7 +127,17 @@ const approvalManagerAbi = [
 ] as const;
 
 const auditLogAbi = [
-  "function recordTamperingDetected(string tenderId, bytes32 actorEmployeeHash, string actorRole, bytes32 expectedDocumentHash, bytes32 observedDocumentHash, bytes32 metadataHash)"
+  "function recordTamperingDetected(string tenderId, bytes32 actorEmployeeHash, string actorRole, bytes32 expectedDocumentHash, bytes32 observedDocumentHash, bytes32 metadataHash)",
+  "function recordTenderManifestCommitted(string tenderId, bytes32 actorEmployeeHash, string actorRole, bytes32 manifestHash, bytes32 metadataHash)",
+  "function recordTenderPublished(string tenderId, bytes32 actorEmployeeHash, string actorRole, bytes32 manifestHash, bytes32 metadataHash)",
+  "function recordProposalPackageSubmitted(string tenderId, bytes32 actorEmployeeHash, string actorRole, bytes32 packageHash, bytes32 metadataHash)",
+  "function recordProposalEnvelopeCommitted(string tenderId, bytes32 actorEmployeeHash, string actorRole, string envelopeType, bytes32 envelopeManifestHash, bytes32 metadataHash)",
+  "function recordTenderClosed(string tenderId, bytes32 actorEmployeeHash, string actorRole, bytes32 closureHash, bytes32 metadataHash)",
+  "function recordKeyReleaseLogged(string tenderId, bytes32 actorEmployeeHash, string actorRole, string envelopeType, bytes32 keyReleaseHash, bytes32 metadataHash)",
+  "function recordEvaluationReportCommitted(string tenderId, bytes32 actorEmployeeHash, string actorRole, bytes32 reportHash, bytes32 metadataHash)",
+  "function recordAwardRecommended(string tenderId, bytes32 actorEmployeeHash, string actorRole, bytes32 recommendationHash, bytes32 metadataHash)",
+  "function recordAwardApproved(string tenderId, bytes32 actorEmployeeHash, string actorRole, bytes32 approvalHash, bytes32 metadataHash)",
+  "function recordContractHashCommitted(string tenderId, bytes32 actorEmployeeHash, string actorRole, bytes32 contractHash, bytes32 metadataHash)"
 ] as const;
 
 export class RelayerConfigError extends AppError {
@@ -452,6 +500,198 @@ export async function recordTamperingDetected(input: TamperingDetectedRelayerInp
       expectedDocumentHash: input.expectedDocumentHash,
       observedDocumentHash: input.observedDocumentHash
     })
+  });
+}
+
+function lifecycleArgs(input: RelayerBaseInput, action: string, extra: Record<string, unknown>, subjectName: string, subjectValue: string) {
+  return [
+    input.tenderId,
+    toBytes32("actorEmployeeHash", input.actorEmployeeHash),
+    input.actorRole,
+    toBytes32(subjectName, subjectValue, { hashIfNotBytes32: true }),
+    metadataHash(input, action, extra)
+  ];
+}
+
+export async function recordTenderManifestCommitted(input: TenderManifestProofRelayerInput) {
+  validateBaseInput(input);
+  validateRequiredString("manifestHash", input.manifestHash);
+  const action = "TENDER_MANIFEST_COMMITTED";
+  const extra = { manifestHash: input.manifestHash };
+
+  return submitTransaction({
+    contractName: "auditLogAddress",
+    abi: auditLogAbi,
+    functionName: "recordTenderManifestCommitted",
+    args: lifecycleArgs(input, action, extra, "manifestHash", input.manifestHash),
+    mockAction: action,
+    mockPayload: normalizeMetadata(input, action, extra)
+  });
+}
+
+export async function recordTenderPublished(input: TenderManifestProofRelayerInput) {
+  validateBaseInput(input);
+  validateRequiredString("manifestHash", input.manifestHash);
+  const action = "TENDER_PUBLISHED";
+  const extra = { manifestHash: input.manifestHash };
+
+  return submitTransaction({
+    contractName: "auditLogAddress",
+    abi: auditLogAbi,
+    functionName: "recordTenderPublished",
+    args: lifecycleArgs(input, action, extra, "manifestHash", input.manifestHash),
+    mockAction: action,
+    mockPayload: normalizeMetadata(input, action, extra)
+  });
+}
+
+export async function recordProposalPackageSubmitted(input: ProposalPackageProofRelayerInput) {
+  validateBaseInput(input);
+  validateRequiredString("packageHash", input.packageHash);
+  const action = "PROPOSAL_PACKAGE_SUBMITTED";
+  const extra = { packageHash: input.packageHash };
+
+  return submitTransaction({
+    contractName: "auditLogAddress",
+    abi: auditLogAbi,
+    functionName: "recordProposalPackageSubmitted",
+    args: lifecycleArgs(input, action, extra, "packageHash", input.packageHash),
+    mockAction: action,
+    mockPayload: normalizeMetadata(input, action, extra)
+  });
+}
+
+export async function recordProposalEnvelopeCommitted(input: ProposalEnvelopeProofRelayerInput) {
+  validateBaseInput(input);
+  validateRequiredString("envelopeType", input.envelopeType);
+  validateRequiredString("envelopeManifestHash", input.envelopeManifestHash);
+  const action = "PROPOSAL_ENVELOPE_COMMITTED";
+  const extra = {
+    envelopeType: input.envelopeType,
+    envelopeManifestHash: input.envelopeManifestHash
+  };
+
+  return submitTransaction({
+    contractName: "auditLogAddress",
+    abi: auditLogAbi,
+    functionName: "recordProposalEnvelopeCommitted",
+    args: [
+      input.tenderId,
+      toBytes32("actorEmployeeHash", input.actorEmployeeHash),
+      input.actorRole,
+      input.envelopeType,
+      toBytes32("envelopeManifestHash", input.envelopeManifestHash, { hashIfNotBytes32: true }),
+      metadataHash(input, action, extra)
+    ],
+    mockAction: action,
+    mockPayload: normalizeMetadata(input, action, extra)
+  });
+}
+
+export async function recordTenderClosed(input: TenderClosedProofRelayerInput) {
+  validateBaseInput(input);
+  validateRequiredString("closureHash", input.closureHash);
+  const action = "TENDER_CLOSED";
+  const extra = { closureHash: input.closureHash };
+
+  return submitTransaction({
+    contractName: "auditLogAddress",
+    abi: auditLogAbi,
+    functionName: "recordTenderClosed",
+    args: lifecycleArgs(input, action, extra, "closureHash", input.closureHash),
+    mockAction: action,
+    mockPayload: normalizeMetadata(input, action, extra)
+  });
+}
+
+export async function recordKeyReleaseLogged(input: KeyReleaseProofRelayerInput) {
+  validateBaseInput(input);
+  validateRequiredString("envelopeType", input.envelopeType);
+  validateRequiredString("keyReleaseHash", input.keyReleaseHash);
+  const action = "KEY_RELEASE_LOGGED";
+  const extra = {
+    envelopeType: input.envelopeType,
+    keyReleaseHash: input.keyReleaseHash
+  };
+
+  return submitTransaction({
+    contractName: "auditLogAddress",
+    abi: auditLogAbi,
+    functionName: "recordKeyReleaseLogged",
+    args: [
+      input.tenderId,
+      toBytes32("actorEmployeeHash", input.actorEmployeeHash),
+      input.actorRole,
+      input.envelopeType,
+      toBytes32("keyReleaseHash", input.keyReleaseHash, { hashIfNotBytes32: true }),
+      metadataHash(input, action, extra)
+    ],
+    mockAction: action,
+    mockPayload: normalizeMetadata(input, action, extra)
+  });
+}
+
+export async function recordEvaluationReportCommitted(input: EvaluationReportProofRelayerInput) {
+  validateBaseInput(input);
+  validateRequiredString("reportHash", input.reportHash);
+  const action = "EVALUATION_REPORT_COMMITTED";
+  const extra = { reportHash: input.reportHash };
+
+  return submitTransaction({
+    contractName: "auditLogAddress",
+    abi: auditLogAbi,
+    functionName: "recordEvaluationReportCommitted",
+    args: lifecycleArgs(input, action, extra, "reportHash", input.reportHash),
+    mockAction: action,
+    mockPayload: normalizeMetadata(input, action, extra)
+  });
+}
+
+export async function recordAwardRecommended(input: AwardRecommendedProofRelayerInput) {
+  validateBaseInput(input);
+  validateRequiredString("recommendationHash", input.recommendationHash);
+  const action = "AWARD_RECOMMENDED";
+  const extra = { recommendationHash: input.recommendationHash };
+
+  return submitTransaction({
+    contractName: "auditLogAddress",
+    abi: auditLogAbi,
+    functionName: "recordAwardRecommended",
+    args: lifecycleArgs(input, action, extra, "recommendationHash", input.recommendationHash),
+    mockAction: action,
+    mockPayload: normalizeMetadata(input, action, extra)
+  });
+}
+
+export async function recordAwardApproved(input: AwardApprovedProofRelayerInput) {
+  validateBaseInput(input);
+  validateRequiredString("approvalHash", input.approvalHash);
+  const action = "AWARD_APPROVED";
+  const extra = { approvalHash: input.approvalHash };
+
+  return submitTransaction({
+    contractName: "auditLogAddress",
+    abi: auditLogAbi,
+    functionName: "recordAwardApproved",
+    args: lifecycleArgs(input, action, extra, "approvalHash", input.approvalHash),
+    mockAction: action,
+    mockPayload: normalizeMetadata(input, action, extra)
+  });
+}
+
+export async function recordContractHashCommitted(input: ContractHashCommittedRelayerInput) {
+  validateBaseInput(input);
+  validateRequiredString("contractHash", input.contractHash);
+  const action = "CONTRACT_HASH_COMMITTED";
+  const extra = { contractHash: input.contractHash };
+
+  return submitTransaction({
+    contractName: "auditLogAddress",
+    abi: auditLogAbi,
+    functionName: "recordContractHashCommitted",
+    args: lifecycleArgs(input, action, extra, "contractHash", input.contractHash),
+    mockAction: action,
+    mockPayload: normalizeMetadata(input, action, extra)
   });
 }
 

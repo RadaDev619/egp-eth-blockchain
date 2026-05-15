@@ -5,6 +5,7 @@ import { permissions } from "../../src/types/domain.js";
 const db = vi.hoisted(() => ({
   requestSeq: 0,
   auditSeq: 0,
+  blockchainSeq: 0,
   tenders: [] as Array<Record<string, unknown>>,
   stakeholders: [] as Array<Record<string, unknown>>,
   assignments: [] as Array<Record<string, unknown>>,
@@ -13,9 +14,11 @@ const db = vi.hoisted(() => ({
   policies: [] as Array<Record<string, unknown>>,
   requests: [] as Array<Record<string, unknown>>,
   auditLogs: [] as Array<Record<string, unknown>>,
+  blockchainTransactions: [] as Array<Record<string, unknown>>,
   reset() {
     this.requestSeq = 0;
     this.auditSeq = 0;
+    this.blockchainSeq = 0;
     this.tenders.length = 0;
     this.stakeholders.length = 0;
     this.assignments.length = 0;
@@ -24,7 +27,22 @@ const db = vi.hoisted(() => ({
     this.policies.length = 0;
     this.requests.length = 0;
     this.auditLogs.length = 0;
+    this.blockchainTransactions.length = 0;
   }
+}));
+
+const relayerMocks = vi.hoisted(() => ({
+  recordKeyReleaseLogged: vi.fn(async () => ({
+    txHash: "0xmockkeyrelease000000000000000000000000000000000000000000000000",
+    status: "MOCK_CONFIRMED",
+    network: "mock",
+    blockNumber: 0,
+    chainId: 31337,
+    contractAddress: "mock-contract",
+    relayerAddress: "mock-relayer",
+    explorerUrl: null,
+    mock: true
+  }))
 }));
 
 function includeStakeholder(assignment: Record<string, unknown>) {
@@ -153,11 +171,22 @@ vi.mock("../../src/utils/prisma.js", () => {
         return audit;
       })
     },
+    blockchainTransaction: {
+      create: vi.fn(async ({ data }) => {
+        const transaction = { id: `blockchain-${++db.blockchainSeq}`, createdAt: new Date(), ...data };
+        db.blockchainTransactions.push(transaction);
+        return transaction;
+      })
+    },
     $transaction: vi.fn(async (callback) => callback(prisma))
   };
 
   return { prisma };
 });
+
+vi.mock("../../src/services/relayer.js", () => ({
+  recordKeyReleaseLogged: relayerMocks.recordKeyReleaseLogged
+}));
 
 const { releaseEnvelopeKey, requestEnvelopeKeyRelease } = await import("../../src/services/keyManagementService.js");
 
@@ -223,6 +252,7 @@ function seedEnvelope(envelopeType: string) {
 describe("keyManagementService", () => {
   beforeEach(() => {
     db.reset();
+    relayerMocks.recordKeyReleaseLogged.mockClear();
   });
 
   it("creates and releases a key request only after gateway and key policy checks pass", async () => {
@@ -254,7 +284,28 @@ describe("keyManagementService", () => {
       keyMaterialReference: expect.stringMatching(/^kms:\/\/mock\/releases\//)
     });
     expect(released.keyMaterialReference).toBe(released.request.keyMaterialReference);
+    expect(relayerMocks.recordKeyReleaseLogged).toHaveBeenCalledTimes(1);
+    expect(relayerMocks.recordKeyReleaseLogged).toHaveBeenCalledWith(
+      expect.objectContaining({
+        tenderId: "tender-1",
+        actorEmployeeHash: "0xtecchair",
+        actorRole: "TEC_CHAIR",
+        envelopeType: "TECHNICAL",
+        keyReleaseHash: expect.stringMatching(/^0x[a-f0-9]{64}$/)
+      })
+    );
+    expect(db.blockchainTransactions).toContainEqual(
+      expect.objectContaining({
+        action: "KEY_RELEASE_LOGGED",
+        resourceType: "KEY_RELEASE_REQUEST",
+        txHash: "0xmockkeyrelease000000000000000000000000000000000000000000000000"
+      })
+    );
     expect(db.auditLogs.map((audit) => audit.action)).toEqual(["KEY_RELEASE_REQUESTED", "ENVELOPE_KEY_RELEASED"]);
+    expect(db.auditLogs.at(-1)).toMatchObject({
+      status: "MOCK_CHAIN_CONFIRMED",
+      txHash: "0xmockkeyrelease000000000000000000000000000000000000000000000000"
+    });
     expect(JSON.stringify(db.auditLogs)).not.toContain("TEC-CHAIR-001");
   });
 
@@ -292,5 +343,31 @@ describe("keyManagementService", () => {
       resourceType: "KEY_RELEASE_REQUEST",
       rejectionReason: "KEY_RELEASE_POLICY_NOT_SATISFIED"
     });
+    expect(relayerMocks.recordKeyReleaseLogged).not.toHaveBeenCalled();
+  });
+
+  it("does not call the relayer when secure gateway assignment policy fails", async () => {
+    seedTender("TECHNICAL_EVALUATION");
+    db.assignments.length = 0;
+    const envelopeId = seedEnvelope("TECHNICAL");
+    db.policies.push({
+      id: "policy-technical-chair",
+      tenderId: "tender-1",
+      proposalEnvelopeId: envelopeId,
+      envelopeType: "TECHNICAL",
+      allowedRole: "TEC_CHAIR",
+      requiredTenderState: "TECHNICAL_EVALUATION",
+      requiresIntegrityCheck: true,
+      isActive: true,
+      createdAt: new Date()
+    });
+
+    await expect(requestEnvelopeKeyRelease({ proposalEnvelopeId: envelopeId }, tecChair)).rejects.toMatchObject({
+      statusCode: 403,
+      code: "AUTHORIZATION_ERROR"
+    });
+
+    expect(db.requests).toHaveLength(0);
+    expect(relayerMocks.recordKeyReleaseLogged).not.toHaveBeenCalled();
   });
 });

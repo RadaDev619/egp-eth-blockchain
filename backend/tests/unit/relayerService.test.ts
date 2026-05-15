@@ -3,6 +3,8 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const actorEmployeeHash = `0x${"1".repeat(64)}`;
 const documentHash = `0x${"2".repeat(64)}`;
 const bidHash = `0x${"3".repeat(64)}`;
+const envelopeManifestHash = `0x${"6".repeat(64)}`;
+const keyReleaseHash = `0x${"7".repeat(64)}`;
 const validAddress = "0x0000000000000000000000000000000000000001";
 const validPrivateKey = `0x${"4".repeat(64)}`;
 
@@ -59,10 +61,75 @@ describe("gasless backend relayer", () => {
     expect(relayer).toHaveProperty("recordEvaluationApproved");
     expect(relayer).toHaveProperty("recordPaymentApproved");
     expect(relayer).toHaveProperty("recordTamperingDetected");
+    expect(relayer).toHaveProperty("recordTenderManifestCommitted");
+    expect(relayer).toHaveProperty("recordTenderPublished");
+    expect(relayer).toHaveProperty("recordProposalPackageSubmitted");
+    expect(relayer).toHaveProperty("recordProposalEnvelopeCommitted");
+    expect(relayer).toHaveProperty("recordTenderClosed");
+    expect(relayer).toHaveProperty("recordKeyReleaseLogged");
+    expect(relayer).toHaveProperty("recordEvaluationReportCommitted");
+    expect(relayer).toHaveProperty("recordAwardRecommended");
+    expect(relayer).toHaveProperty("recordAwardApproved");
+    expect(relayer).toHaveProperty("recordContractHashCommitted");
     expect(relayer).toHaveProperty("getTransactionStatus");
     expect(relayer).toHaveProperty("getExplorerUrl");
     expect(relayer).not.toHaveProperty("callContract");
     expect(relayer).not.toHaveProperty("callRelayerContract");
+  });
+
+  it("returns deterministic mock tx hashes for expanded lifecycle proof methods", async () => {
+    const { recordProposalEnvelopeCommitted, recordKeyReleaseLogged } = await importRelayer();
+    const envelopeInput = {
+      tenderId: "tender-1",
+      actorEmployeeHash,
+      actorRole: "VENDOR",
+      envelopeType: "FINANCIAL",
+      envelopeManifestHash,
+      metadata: {
+        proposalEnvelopeId: "envelope-1"
+      }
+    };
+    const keyReleaseInput = {
+      tenderId: "tender-1",
+      actorEmployeeHash,
+      actorRole: "TEC_CHAIR",
+      envelopeType: "FINANCIAL",
+      keyReleaseHash,
+      metadata: {
+        keyReleaseRequestId: "key-request-1"
+      }
+    };
+
+    const firstEnvelope = await recordProposalEnvelopeCommitted(envelopeInput);
+    const secondEnvelope = await recordProposalEnvelopeCommitted(envelopeInput);
+    const keyRelease = await recordKeyReleaseLogged(keyReleaseInput);
+
+    expect(firstEnvelope).toMatchObject({
+      txHash: secondEnvelope.txHash,
+      status: "MOCK_CONFIRMED",
+      network: "mock",
+      contractAddress: "mock-contract",
+      relayerAddress: "mock-relayer",
+      mock: true
+    });
+    expect(firstEnvelope.txHash).toMatch(/^0xmock[0-9a-f]{58}$/);
+    expect(keyRelease.txHash).toMatch(/^0xmock[0-9a-f]{58}$/);
+    expect(keyRelease.txHash).not.toBe(firstEnvelope.txHash);
+  });
+
+  it("rejects invalid expanded proof payloads before contract submission", async () => {
+    const { recordProposalPackageSubmitted } = await importRelayer();
+
+    await expect(
+      recordProposalPackageSubmitted({
+        tenderId: "tender-1",
+        actorEmployeeHash,
+        actorRole: "VENDOR",
+        packageHash: ""
+      })
+    ).rejects.toMatchObject({
+      code: "VALIDATION_ERROR"
+    });
   });
 
   it("fails safely outside mock mode when the relayer private key is missing", async () => {
@@ -78,6 +145,23 @@ describe("gasless backend relayer", () => {
         fromState: "CREATED",
         toState: "BID_SUBMITTED",
         bidHash
+      })
+    ).rejects.toMatchObject({
+      code: "RELAYER_CONFIG_ERROR"
+    });
+  });
+
+  it("preserves local mode safety checks for expanded proof methods", async () => {
+    vi.stubEnv("BLOCKCHAIN_MODE", "local");
+    vi.stubEnv("RELAYER_PRIVATE_KEY", "");
+    const { recordTenderPublished } = await importRelayer();
+
+    await expect(
+      recordTenderPublished({
+        tenderId: "tender-1",
+        actorEmployeeHash,
+        actorRole: "APPROVING_OFFICER",
+        manifestHash: documentHash
       })
     ).rejects.toMatchObject({
       code: "RELAYER_CONFIG_ERROR"
