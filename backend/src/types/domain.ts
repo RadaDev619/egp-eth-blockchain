@@ -35,6 +35,7 @@ export const permissions = {
   APPROVE_AWARD: "APPROVE_AWARD",
   COMMIT_CONTRACT_HASH: "COMMIT_CONTRACT_HASH",
   ARCHIVE_TENDER: "ARCHIVE_TENDER",
+  MANAGE_LEGACY_EGP_SIMULATOR: "MANAGE_LEGACY_EGP_SIMULATOR",
   VIEW_PUBLIC_AUDIT_PROOFS: "VIEW_PUBLIC_AUDIT_PROOFS"
 } as const;
 
@@ -53,6 +54,7 @@ export const rolePermissions: Record<Role, Permission[]> = {
     permissions.CLOSE_TENDER,
     permissions.COMMIT_CONTRACT_HASH,
     permissions.ARCHIVE_TENDER,
+    permissions.MANAGE_LEGACY_EGP_SIMULATOR,
     permissions.CANCEL_TENDER
   ],
   VENDOR: [

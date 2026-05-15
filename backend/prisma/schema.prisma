@@ -174,6 +174,15 @@ enum PublicAuditProofType {
   TAMPERING_DETECTED
 }
 
+enum LegacyEgpRecordType {
+  TENDER_OPERATION
+  PROPOSAL_STORAGE
+  EVALUATION_UPDATE
+  AWARD_UPDATE
+  CONTRACT_UPDATE
+  DOCUMENT_REFERENCE
+}
+
 model NDIProfile {
   id             String    @id @default(cuid())
   holderDID      String    @unique
@@ -263,6 +272,7 @@ model Tender {
   awardRecommendations    AwardRecommendation[]
   awardApprovals          AwardApproval[]
   publicAuditProofs       PublicAuditProof[]
+  legacyEgpRecords        LegacyEgpRecord[]
 }
 
 model TenderVersion {
@@ -440,10 +450,36 @@ model EncryptedFileReference {
   authTag             String?
   encryptionAlgorithm String            @default("AES-256-GCM")
   createdAt           DateTime          @default(now())
+  legacyEgpRecords    LegacyEgpRecord[]
 
   @@index([tenderId])
   @@index([proposalEnvelopeId])
   @@index([encryptedFileHash])
+}
+
+model LegacyEgpRecord {
+  id                       String                  @id @default(cuid())
+  sourceSystem             String                  @default("EGP_SIMULATOR")
+  legacyRecordId           String                  @unique
+  recordType               LegacyEgpRecordType
+  operation                String
+  operationalStatus        String
+  tenderId                 String
+  tender                   Tender                  @relation(fields: [tenderId], references: [id])
+  encryptedFileReferenceId String?
+  encryptedFileReference   EncryptedFileReference? @relation(fields: [encryptedFileReferenceId], references: [id])
+  trustLayerTxHash         String?
+  blockchainStatus         BlockchainStatus?
+  metadataHash             String?
+  metadata                 Json?
+  legacyCreatedAt          DateTime?
+  createdAt                DateTime                @default(now())
+  updatedAt                DateTime                @updatedAt
+
+  @@index([tenderId])
+  @@index([sourceSystem])
+  @@index([recordType])
+  @@index([trustLayerTxHash])
 }
 
 model KeyReleasePolicy {

@@ -477,6 +477,7 @@ async function main() {
     { envelopeType: "TENDER_SECURITY", keyId: "kms-demo-security-v1" }
   ] as const;
   const envelopes = new Map<string, string>();
+  const encryptedFileReferences = new Map<string, string>();
 
   for (const envelopeSeed of envelopeSeeds) {
     const envelope = await prisma.proposalEnvelope.upsert({
@@ -512,7 +513,7 @@ async function main() {
 
     envelopes.set(envelopeSeed.envelopeType, envelope.id);
 
-    await prisma.encryptedFileReference.upsert({
+    const encryptedFileReference = await prisma.encryptedFileReference.upsert({
       where: {
         storageKey: `${demoTenderCode}/${envelopeSeed.envelopeType.toLowerCase()}.enc`
       },
@@ -536,6 +537,89 @@ async function main() {
         byteSize: 4096,
         originalFilename: `${envelopeSeed.envelopeType.toLowerCase()}-proposal.pdf.enc`,
         encryptionAlgorithm: "AES-256-GCM"
+      }
+    });
+
+    encryptedFileReferences.set(envelopeSeed.envelopeType, encryptedFileReference.id);
+  }
+
+  const legacyRecordSeeds = [
+    {
+      legacyRecordId: "legacy-egp-demo-tender-published",
+      recordType: "TENDER_OPERATION",
+      operation: "TENDER_PUBLISHED_IN_OLD_EGP_SIMULATOR",
+      operationalStatus: "SYNCED",
+      encryptedFileReferenceId: null,
+      trustLayerTxHash: demoTenderTxHash,
+      blockchainStatus: "MOCK_CONFIRMED",
+      metadata: {
+        tenderCode: demoTenderCode,
+        simulatorOnly: true,
+        productionEgpApi: false
+      }
+    },
+    {
+      legacyRecordId: "legacy-egp-demo-technical-envelope",
+      recordType: "PROPOSAL_STORAGE",
+      operation: "ENCRYPTED_TECHNICAL_ENVELOPE_STORED",
+      operationalStatus: "ENCRYPTED_REFERENCE_ONLY",
+      encryptedFileReferenceId: encryptedFileReferences.get("TECHNICAL") ?? null,
+      trustLayerTxHash: "0xmockseedenvelopecommit000000000000000000000000000000000000000",
+      blockchainStatus: "MOCK_CONFIRMED",
+      metadata: {
+        tenderCode: demoTenderCode,
+        envelopeType: "TECHNICAL",
+        storageMode: "encrypted-reference-only",
+        plaintextStored: false
+      }
+    },
+    {
+      legacyRecordId: "legacy-egp-demo-award-proof",
+      recordType: "AWARD_UPDATE",
+      operation: "AWARD_APPROVAL_PROOF_LINKED",
+      operationalStatus: "TRUST_LAYER_TX_REFERENCED",
+      encryptedFileReferenceId: null,
+      trustLayerTxHash: "0xmockseedawardapproval000000000000000000000000000000000000000",
+      blockchainStatus: "MOCK_CONFIRMED",
+      metadata: {
+        tenderCode: demoTenderCode,
+        thresholdApproval: true,
+        source: "simulated old-system operational record"
+      }
+    }
+  ] as const;
+
+  for (const legacyRecordSeed of legacyRecordSeeds) {
+    await prisma.legacyEgpRecord.upsert({
+      where: {
+        legacyRecordId: legacyRecordSeed.legacyRecordId
+      },
+      update: {
+        sourceSystem: "EGP_SIMULATOR",
+        tenderId: tender.id,
+        recordType: legacyRecordSeed.recordType,
+        operation: legacyRecordSeed.operation,
+        operationalStatus: legacyRecordSeed.operationalStatus,
+        encryptedFileReferenceId: legacyRecordSeed.encryptedFileReferenceId,
+        trustLayerTxHash: legacyRecordSeed.trustLayerTxHash,
+        blockchainStatus: legacyRecordSeed.blockchainStatus,
+        metadataHash: stableHash(JSON.stringify(legacyRecordSeed.metadata)),
+        metadata: legacyRecordSeed.metadata,
+        legacyCreatedAt: new Date("2026-01-01T00:00:00.000Z")
+      },
+      create: {
+        sourceSystem: "EGP_SIMULATOR",
+        legacyRecordId: legacyRecordSeed.legacyRecordId,
+        tenderId: tender.id,
+        recordType: legacyRecordSeed.recordType,
+        operation: legacyRecordSeed.operation,
+        operationalStatus: legacyRecordSeed.operationalStatus,
+        encryptedFileReferenceId: legacyRecordSeed.encryptedFileReferenceId,
+        trustLayerTxHash: legacyRecordSeed.trustLayerTxHash,
+        blockchainStatus: legacyRecordSeed.blockchainStatus,
+        metadataHash: stableHash(JSON.stringify(legacyRecordSeed.metadata)),
+        metadata: legacyRecordSeed.metadata,
+        legacyCreatedAt: new Date("2026-01-01T00:00:00.000Z")
       }
     });
   }
