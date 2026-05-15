@@ -19,6 +19,7 @@ const demoProfileIds: Record<string, string> = {
   "EVAL-001": "ndi-profile-eval-001",
   "FIN-001": "ndi-profile-fin-001",
   "APP-001": "ndi-profile-app-001",
+  "APP-002": "ndi-profile-app-002",
   "AUD-001": "ndi-profile-aud-001"
 };
 
@@ -154,6 +155,17 @@ async function main() {
       employeeHash: createEmployeeHash("APP-001"),
       businessIdentifierHash: null,
       publicIdentifier: "APPROVER-DEMO"
+    },
+    {
+      key: "secondApprovingOfficer",
+      id: "stakeholder-second-approving-officer",
+      userId: demoUserId("APP-002"),
+      stakeholderType: "PROCURING_AGENCY",
+      displayName: "Demo Second Approving Officer",
+      organization: "Ministry of Finance",
+      employeeHash: createEmployeeHash("APP-002"),
+      businessIdentifierHash: null,
+      publicIdentifier: "APPROVER-DEMO-2"
     },
     {
       key: "financeOfficer",
@@ -296,6 +308,7 @@ async function main() {
     { stakeholderKey: "tecMember", role: "TEC_MEMBER" },
     { stakeholderKey: "tecChair", role: "TEC_CHAIR" },
     { stakeholderKey: "approvingOfficer", role: "APPROVING_OFFICER" },
+    { stakeholderKey: "secondApprovingOfficer", role: "APPROVING_OFFICER" },
     { stakeholderKey: "financeOfficer", role: "FINANCE_OFFICER" },
     { stakeholderKey: "financialInstitutionOfficer", role: "FINANCIAL_INSTITUTION_OFFICER" },
     { stakeholderKey: "auditor", role: "AUDITOR" }
@@ -348,6 +361,7 @@ async function main() {
       documentsHash: demoDocumentHash,
       approvalPolicy: {
         publicationThreshold: 2,
+        awardApprovalThreshold: 2,
         requiredRoles: ["PROCUREMENT_OFFICER", "APPROVING_OFFICER"],
         envelopeOpeningOrder: ["ELIGIBILITY", "TECHNICAL", "FINANCIAL"]
       },
@@ -368,6 +382,7 @@ async function main() {
       documentsHash: demoDocumentHash,
       approvalPolicy: {
         publicationThreshold: 2,
+        awardApprovalThreshold: 2,
         requiredRoles: ["PROCUREMENT_OFFICER", "APPROVING_OFFICER"],
         envelopeOpeningOrder: ["ELIGIBILITY", "TECHNICAL", "FINANCIAL"]
       },

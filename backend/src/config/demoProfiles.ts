@@ -51,6 +51,14 @@ export const demoProfiles: DemoNdiProfile[] = [
     role: "APPROVING_OFFICER"
   },
   {
+    employmentId: "APP-002",
+    holderDID: "did:key:mock-approving-officer-two",
+    employer: "Ministry of Finance",
+    position: "Second Approving Officer",
+    employmentType: "Regular",
+    role: "APPROVING_OFFICER"
+  },
+  {
     employmentId: "AUD-001",
     holderDID: "did:key:mock-auditor",
     employer: "Royal Audit Authority",

@@ -1,5 +1,6 @@
 import { Router } from "express";
 import { auditRoutes } from "./auditRoutes.js";
+import { awardRoutes } from "./awardRoutes.js";
 import { authRoutes } from "./authRoutes.js";
 import { evaluationCommitteeRoutes } from "./evaluationCommitteeRoutes.js";
 import { financialEvaluationRoutes } from "./financialEvaluationRoutes.js";
@@ -29,4 +30,5 @@ routes.use(proposalPackageRoutes);
 routes.use(keyManagementRoutes);
 routes.use(evaluationCommitteeRoutes);
 routes.use(financialEvaluationRoutes);
+routes.use(awardRoutes);
 routes.use(auditRoutes);
