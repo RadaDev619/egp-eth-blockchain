@@ -1,0 +1,277 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "postgresql"
+  url      = env("DATABASE_URL")
+}
+
+enum Role {
+  PROCUREMENT_OFFICER
+  VENDOR
+  EVALUATOR
+  FINANCE_OFFICER
+  AUDITOR
+}
+
+enum TenderState {
+  CREATED
+  OPEN_FOR_BIDS
+  BID_SUBMITTED
+  EVALUATION_PENDING
+  EVALUATION_APPROVED
+  PAYMENT_PENDING
+  PAYMENT_APPROVED
+  COMPLETED
+  CANCELLED
+}
+
+enum ProcurementAction {
+  CREATE_TENDER
+  SUBMIT_BID
+  APPROVE_EVALUATION
+  REJECT_EVALUATION
+  APPROVE_PAYMENT
+  REJECT_PAYMENT
+  CREATE_TENDER_VERSION
+  CANCEL_TENDER
+  VERIFY_DOCUMENT
+  COMPLETE_PROCUREMENT
+}
+
+enum ApprovalType {
+  EVALUATION
+  PAYMENT
+}
+
+enum ApprovalDecision {
+  APPROVED
+  REJECTED
+}
+
+enum AuditStatus {
+  SUCCESS
+  BLOCKED
+  FAILED
+  PENDING_CHAIN_CONFIRMATION
+  CHAIN_CONFIRMED
+  CHAIN_FAILED
+  MOCK_CHAIN_CONFIRMED
+}
+
+enum BlockchainStatus {
+  NOT_SUBMITTED
+  PENDING
+  CONFIRMED
+  FAILED
+  MOCK_CONFIRMED
+}
+
+model NDIProfile {
+  id             String    @id @default(cuid())
+  holderDID      String    @unique
+  employmentId   String    @unique
+  employeeHash   String    @unique
+  employer       String
+  position       String
+  employmentType String
+  grade          String?
+  startDate      DateTime?
+  endDate        DateTime?
+  createdAt      DateTime  @default(now())
+  updatedAt      DateTime  @updatedAt
+  users          User[]
+}
+
+model User {
+  id           String      @id @default(cuid())
+  ndiProfileId String
+  ndiProfile   NDIProfile  @relation(fields: [ndiProfileId], references: [id])
+  role         Role
+  isActive     Boolean     @default(true)
+  createdAt    DateTime    @default(now())
+  updatedAt    DateTime    @updatedAt
+  sessions     AuthSession[]
+}
+
+model RolePermission {
+  id         String   @id @default(cuid())
+  role       Role
+  permission String
+  createdAt  DateTime @default(now())
+  updatedAt  DateTime @updatedAt
+
+  @@unique([role, permission])
+}
+
+model AuthSession {
+  id               String   @id @default(cuid())
+  userId           String
+  user             User     @relation(fields: [userId], references: [id])
+  sessionTokenHash String   @unique
+  expiresAt        DateTime
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+}
+
+model NDIProofRequest {
+  id                  String    @id @default(cuid())
+  threadId            String    @unique
+  proofName           String
+  purpose             String
+  status              String
+  transport           String
+  requestedAttributes Json
+  resultPayload       Json?
+  createdAt           DateTime  @default(now())
+  completedAt         DateTime?
+  expiresAt           DateTime
+}
+
+model Tender {
+  id                    String                  @id @default(cuid())
+  tenderCode            String                  @unique
+  agency                String
+  currentState          TenderState
+  currentVersion        Int                     @default(1)
+  createdByEmployeeHash String
+  createdByRole         Role
+  createdTxHash         String?
+  createdAt             DateTime                @default(now())
+  updatedAt             DateTime                @updatedAt
+  versions              TenderVersion[]
+  bids                  Bid[]
+  approvals             Approval[]
+  transitions           ProcurementTransition[]
+}
+
+model TenderVersion {
+  id                    String   @id @default(cuid())
+  tenderId              String
+  tender                Tender   @relation(fields: [tenderId], references: [id])
+  versionNumber         Int
+  title                 String
+  description           String
+  documentHash          String
+  ipfsCid               String?
+  changeReason          String?
+  createdByEmployeeHash String
+  createdByRole         Role
+  txHash                String?
+  createdAt             DateTime @default(now())
+
+  @@unique([tenderId, versionNumber])
+}
+
+model Bid {
+  id                 String           @id @default(cuid())
+  tenderId           String
+  tender             Tender           @relation(fields: [tenderId], references: [id])
+  vendorEmployeeHash String
+  vendorRole         Role
+  bidHash            String
+  bidDocumentHash    String?
+  ipfsCid            String?
+  txHash             String?
+  blockchainStatus   BlockchainStatus @default(NOT_SUBMITTED)
+  createdAt          DateTime         @default(now())
+}
+
+model Approval {
+  id                String           @id @default(cuid())
+  tenderId          String
+  tender            Tender           @relation(fields: [tenderId], references: [id])
+  approvalType      ApprovalType
+  decision          ApprovalDecision
+  actorEmployeeHash String
+  actorRole         Role
+  comments          String?
+  previousState     TenderState
+  newState          TenderState
+  txHash            String?
+  blockchainStatus  BlockchainStatus @default(NOT_SUBMITTED)
+  createdAt         DateTime         @default(now())
+}
+
+model ProcurementTransition {
+  id                String             @id @default(cuid())
+  tenderId          String?
+  tender            Tender?            @relation(fields: [tenderId], references: [id])
+  action            ProcurementAction
+  actorEmployeeHash String?
+  actorRole         Role?
+  fromState         TenderState?
+  toState           TenderState?
+  allowed           Boolean
+  rejectionReason   String?
+  metadata          Json?
+  txHash            String?
+  createdAt         DateTime           @default(now())
+
+  @@index([tenderId])
+  @@index([allowed])
+  @@index([createdAt])
+}
+
+/// Append-only audit evidence. Application code must create new rows instead of updating/deleting history.
+/// This model intentionally has no updatedAt field.
+model AuditLog {
+  id                String            @id @default(cuid())
+  action            String
+  status            AuditStatus
+  actorEmployeeHash String?
+  actorRole         Role?
+  actorHolderDID    String?
+  actorEmployer     String?
+  actorPosition     String?
+  resourceType      String?
+  resourceId        String?
+  tenderId          String?
+  fromState         String?
+  toState           String?
+  permissionChecked String?
+  permissionResult  String?
+  transitionAllowed Boolean?
+  rejectionReason   String?
+  documentHash      String?
+  ipfsCid           String?
+  metadataHash      String?
+  txHash            String?
+  blockNumber       Int?
+  chainId           Int?
+  contractAddress   String?
+  relayerAddress    String?
+  blockchainStatus  BlockchainStatus?
+  route             String?
+  httpMethod        String?
+  requestId         String?
+  metadata          Json?
+  createdAt         DateTime          @default(now())
+
+  @@index([tenderId])
+  @@index([action])
+  @@index([status])
+  @@index([actorEmployeeHash])
+  @@index([txHash])
+  @@index([createdAt])
+}
+
+model BlockchainTransaction {
+  id              String           @id @default(cuid())
+  txHash          String?          @unique
+  network         String
+  chainId         Int?
+  action          String
+  resourceType    String?
+  resourceId      String?
+  tenderId        String?
+  contractAddress String?
+  relayerAddress  String?
+  status          BlockchainStatus
+  blockNumber     Int?
+  errorMessage    String?
+  explorerUrl     String?
+  createdAt       DateTime         @default(now())
+  confirmedAt     DateTime?
+}

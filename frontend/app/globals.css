@@ -1,0 +1,35 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  color-scheme: light;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html {
+  min-height: 100%;
+  background: #f8fafc;
+}
+
+body {
+  min-height: 100%;
+  margin: 0;
+  background: #f8fafc;
+  color: #0f172a;
+}
+
+button,
+input,
+select,
+textarea {
+  font: inherit;
+}
+
+::selection {
+  background: #bbf7d0;
+  color: #052e16;
+}
