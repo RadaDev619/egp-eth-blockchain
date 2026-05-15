@@ -18,6 +18,7 @@ const demoProfileIds: Record<string, string> = {
   "VEND-001": "ndi-profile-vend-001",
   "EVAL-001": "ndi-profile-eval-001",
   "FIN-001": "ndi-profile-fin-001",
+  "APP-001": "ndi-profile-app-001",
   "AUD-001": "ndi-profile-aud-001"
 };
 
@@ -146,7 +147,7 @@ async function main() {
     {
       key: "approvingOfficer",
       id: "stakeholder-approving-officer",
-      userId: null,
+      userId: demoUserId("APP-001"),
       stakeholderType: "PROCURING_AGENCY",
       displayName: "Demo Approving Officer",
       organization: "Ministry of Finance",

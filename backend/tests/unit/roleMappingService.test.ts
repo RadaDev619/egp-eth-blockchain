@@ -7,6 +7,7 @@ describe("roleMappingService", () => {
     expect(mapEmploymentToRole(getDemoProfileByEmploymentId("VEND-001"))).toBe("VENDOR");
     expect(mapEmploymentToRole(getDemoProfileByEmploymentId("EVAL-001"))).toBe("EVALUATOR");
     expect(mapEmploymentToRole(getDemoProfileByEmploymentId("FIN-001"))).toBe("FINANCE_OFFICER");
+    expect(mapEmploymentToRole(getDemoProfileByEmploymentId("APP-001"))).toBe("APPROVING_OFFICER");
     expect(mapEmploymentToRole(getDemoProfileByEmploymentId("AUD-001"))).toBe("AUDITOR");
   });
 
