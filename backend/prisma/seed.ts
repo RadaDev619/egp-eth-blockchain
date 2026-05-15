@@ -1,4 +1,5 @@
 import { PrismaClient, type Role } from "@prisma/client";
+import { createHash } from "node:crypto";
 import { demoProfiles } from "../src/config/demoProfiles.js";
 import { createEmployeeHash } from "../src/services/employeeHashService.js";
 import { rolePermissions } from "../src/types/domain.js";
@@ -8,6 +9,10 @@ const demoTenderCode = "TDR-DEMO-001";
 const demoTenderTxHash = "0xmockseedtendercreated000000000000000000000000000000000000000000000";
 const demoDocumentHash = "0x8f3f20f6f5f07a52b93f9165134907de10bf51f4521c6f471df188d7f7bdb001";
 const demoTenderId = "tender-demo-001";
+const demoManifestId = "manifest-demo-001";
+const demoProposalPackageId = "proposal-package-demo-001";
+const demoEvaluationReportId = "evaluation-report-demo-001";
+const demoAwardRecommendationId = "award-recommendation-demo-001";
 const demoProfileIds: Record<string, string> = {
   "PROC-001": "ndi-profile-proc-001",
   "VEND-001": "ndi-profile-vend-001",
@@ -18,6 +23,10 @@ const demoProfileIds: Record<string, string> = {
 
 function demoUserId(employmentId: string): string {
   return `${employmentId.toLowerCase()}-user`;
+}
+
+function stableHash(input: string): string {
+  return `0x${createHash("sha256").update(input).digest("hex")}`;
 }
 
 function requireDemoProfile(employmentId: string) {
@@ -89,6 +98,136 @@ async function main() {
     });
   }
 
+  const stakeholderSeeds = [
+    {
+      key: "procurementOfficer",
+      id: "stakeholder-procurement-officer",
+      userId: demoUserId("PROC-001"),
+      stakeholderType: "PROCURING_AGENCY",
+      displayName: "Demo Procurement Officer",
+      organization: "Ministry of Finance",
+      employeeHash: createEmployeeHash("PROC-001"),
+      businessIdentifierHash: null,
+      publicIdentifier: "PA-MOF"
+    },
+    {
+      key: "vendor",
+      id: "stakeholder-vendor",
+      userId: demoUserId("VEND-001"),
+      stakeholderType: "VENDOR",
+      displayName: "Demo Vendor Representative",
+      organization: "Demo Vendor Pvt Ltd",
+      employeeHash: createEmployeeHash("VEND-001"),
+      businessIdentifierHash: stableHash("demo-vendor-pvt-ltd"),
+      publicIdentifier: "VENDOR-DEMO"
+    },
+    {
+      key: "tecMember",
+      id: "stakeholder-tec-member",
+      userId: demoUserId("EVAL-001"),
+      stakeholderType: "EVALUATION_COMMITTEE",
+      displayName: "Demo Technical Evaluator",
+      organization: "Tender Evaluation Committee",
+      employeeHash: createEmployeeHash("EVAL-001"),
+      businessIdentifierHash: null,
+      publicIdentifier: "TEC-MEMBER-DEMO"
+    },
+    {
+      key: "tecChair",
+      id: "stakeholder-tec-chair",
+      userId: null,
+      stakeholderType: "EVALUATION_COMMITTEE",
+      displayName: "Demo TEC Chairperson",
+      organization: "Tender Evaluation Committee",
+      employeeHash: createEmployeeHash("TEC-CHAIR-001"),
+      businessIdentifierHash: null,
+      publicIdentifier: "TEC-CHAIR-DEMO"
+    },
+    {
+      key: "approvingOfficer",
+      id: "stakeholder-approving-officer",
+      userId: null,
+      stakeholderType: "PROCURING_AGENCY",
+      displayName: "Demo Approving Officer",
+      organization: "Ministry of Finance",
+      employeeHash: createEmployeeHash("APP-001"),
+      businessIdentifierHash: null,
+      publicIdentifier: "APPROVER-DEMO"
+    },
+    {
+      key: "financeOfficer",
+      id: "stakeholder-finance-officer",
+      userId: demoUserId("FIN-001"),
+      stakeholderType: "PROCURING_AGENCY",
+      displayName: "Demo Finance Officer",
+      organization: "Ministry of Finance",
+      employeeHash: createEmployeeHash("FIN-001"),
+      businessIdentifierHash: null,
+      publicIdentifier: "FINANCE-DEMO"
+    },
+    {
+      key: "financialInstitutionOfficer",
+      id: "stakeholder-financial-institution-officer",
+      userId: null,
+      stakeholderType: "FINANCIAL_INSTITUTION",
+      displayName: "Demo Financial Institution Officer",
+      organization: "Demo Bank Ltd",
+      employeeHash: createEmployeeHash("BANK-001"),
+      businessIdentifierHash: stableHash("demo-bank-ltd"),
+      publicIdentifier: "BANK-DEMO"
+    },
+    {
+      key: "auditor",
+      id: "stakeholder-auditor",
+      userId: demoUserId("AUD-001"),
+      stakeholderType: "AUDIT_AUTHORITY",
+      displayName: "Demo Auditor",
+      organization: "Royal Audit Authority",
+      employeeHash: createEmployeeHash("AUD-001"),
+      businessIdentifierHash: null,
+      publicIdentifier: "AUDIT-DEMO"
+    }
+  ] as const;
+
+  const stakeholders = new Map<string, string>();
+
+  for (const stakeholderSeed of stakeholderSeeds) {
+    const stakeholder = await prisma.stakeholder.upsert({
+      where: { id: stakeholderSeed.id },
+      update: {
+        userId: stakeholderSeed.userId,
+        stakeholderType: stakeholderSeed.stakeholderType,
+        displayName: stakeholderSeed.displayName,
+        organization: stakeholderSeed.organization,
+        employeeHash: stakeholderSeed.employeeHash,
+        businessIdentifierHash: stakeholderSeed.businessIdentifierHash,
+        publicIdentifier: stakeholderSeed.publicIdentifier
+      },
+      create: {
+        id: stakeholderSeed.id,
+        userId: stakeholderSeed.userId,
+        stakeholderType: stakeholderSeed.stakeholderType,
+        displayName: stakeholderSeed.displayName,
+        organization: stakeholderSeed.organization,
+        employeeHash: stakeholderSeed.employeeHash,
+        businessIdentifierHash: stakeholderSeed.businessIdentifierHash,
+        publicIdentifier: stakeholderSeed.publicIdentifier
+      }
+    });
+
+    stakeholders.set(stakeholderSeed.key, stakeholder.id);
+  }
+
+  function requireStakeholder(key: string): string {
+    const stakeholderId = stakeholders.get(key);
+
+    if (!stakeholderId) {
+      throw new Error(`${key} stakeholder is required for demo seeding.`);
+    }
+
+    return stakeholderId;
+  }
+
   const procurementOfficer = requireDemoProfile("PROC-001");
   const financeOfficer = requireDemoProfile("FIN-001");
   const vendor = requireDemoProfile("VEND-001");
@@ -148,6 +287,528 @@ async function main() {
       txHash: demoTenderTxHash
     }
   });
+
+  const assignmentSeeds = [
+    { stakeholderKey: "procurementOfficer", role: "PROCUREMENT_OFFICER" },
+    { stakeholderKey: "vendor", role: "VENDOR" },
+    { stakeholderKey: "tecMember", role: "TEC_MEMBER" },
+    { stakeholderKey: "tecChair", role: "TEC_CHAIR" },
+    { stakeholderKey: "approvingOfficer", role: "APPROVING_OFFICER" },
+    { stakeholderKey: "financeOfficer", role: "FINANCE_OFFICER" },
+    { stakeholderKey: "financialInstitutionOfficer", role: "FINANCIAL_INSTITUTION_OFFICER" },
+    { stakeholderKey: "auditor", role: "AUDITOR" }
+  ] as const;
+
+  for (const assignmentSeed of assignmentSeeds) {
+    await prisma.tenderRoleAssignment.upsert({
+      where: {
+        tenderId_stakeholderId_role: {
+          tenderId: tender.id,
+          stakeholderId: requireStakeholder(assignmentSeed.stakeholderKey),
+          role: assignmentSeed.role
+        }
+      },
+      update: {
+        status: "ACTIVE",
+        assignedByEmployeeHash: procurementOfficerHash,
+        revokedAt: null,
+        metadata: {
+          seeded: true,
+          tenderCode: demoTenderCode
+        }
+      },
+      create: {
+        tenderId: tender.id,
+        stakeholderId: requireStakeholder(assignmentSeed.stakeholderKey),
+        role: assignmentSeed.role,
+        status: "ACTIVE",
+        assignedByEmployeeHash: procurementOfficerHash,
+        activatedAt: new Date(),
+        metadata: {
+          seeded: true,
+          tenderCode: demoTenderCode
+        }
+      }
+    });
+  }
+
+  const manifest = await prisma.tenderManifest.upsert({
+    where: {
+      tenderId_versionNumber: {
+        tenderId: tender.id,
+        versionNumber: 1
+      }
+    },
+    update: {
+      manifestHash: stableHash(`${demoTenderCode}:manifest:v1`),
+      rulesHash: stableHash(`${demoTenderCode}:rules:v1`),
+      criteriaHash: stableHash(`${demoTenderCode}:criteria:v1`),
+      documentsHash: demoDocumentHash,
+      approvalPolicy: {
+        publicationThreshold: 2,
+        requiredRoles: ["PROCUREMENT_OFFICER", "APPROVING_OFFICER"],
+        envelopeOpeningOrder: ["ELIGIBILITY", "TECHNICAL", "FINANCIAL"]
+      },
+      publicationThreshold: 2,
+      status: "ACTIVE",
+      createdByEmployeeHash: procurementOfficerHash,
+      createdByRole: "PROCUREMENT_OFFICER",
+      txHash: demoTenderTxHash,
+      blockchainStatus: "MOCK_CONFIRMED"
+    },
+    create: {
+      id: demoManifestId,
+      tenderId: tender.id,
+      versionNumber: 1,
+      manifestHash: stableHash(`${demoTenderCode}:manifest:v1`),
+      rulesHash: stableHash(`${demoTenderCode}:rules:v1`),
+      criteriaHash: stableHash(`${demoTenderCode}:criteria:v1`),
+      documentsHash: demoDocumentHash,
+      approvalPolicy: {
+        publicationThreshold: 2,
+        requiredRoles: ["PROCUREMENT_OFFICER", "APPROVING_OFFICER"],
+        envelopeOpeningOrder: ["ELIGIBILITY", "TECHNICAL", "FINANCIAL"]
+      },
+      publicationThreshold: 2,
+      status: "ACTIVE",
+      createdByEmployeeHash: procurementOfficerHash,
+      createdByRole: "PROCUREMENT_OFFICER",
+      txHash: demoTenderTxHash,
+      blockchainStatus: "MOCK_CONFIRMED"
+    }
+  });
+
+  const publicationApprovals = [
+    {
+      approverStakeholderId: requireStakeholder("procurementOfficer"),
+      approverEmployeeHash: procurementOfficerHash,
+      approverRole: "PROCUREMENT_OFFICER",
+      signatureHash: stableHash(`${demoTenderCode}:publication:procurement-officer`)
+    },
+    {
+      approverStakeholderId: requireStakeholder("approvingOfficer"),
+      approverEmployeeHash: createEmployeeHash("APP-001"),
+      approverRole: "APPROVING_OFFICER",
+      signatureHash: stableHash(`${demoTenderCode}:publication:approving-officer`)
+    }
+  ] as const;
+
+  for (const approvalSeed of publicationApprovals) {
+    await prisma.tenderPublicationApproval.upsert({
+      where: {
+        manifestId_approverEmployeeHash: {
+          manifestId: manifest.id,
+          approverEmployeeHash: approvalSeed.approverEmployeeHash
+        }
+      },
+      update: {
+        tenderId: tender.id,
+        approverStakeholderId: approvalSeed.approverStakeholderId,
+        approverRole: approvalSeed.approverRole,
+        decision: "APPROVED",
+        signatureHash: approvalSeed.signatureHash,
+        txHash: demoTenderTxHash,
+        blockchainStatus: "MOCK_CONFIRMED"
+      },
+      create: {
+        tenderId: tender.id,
+        manifestId: manifest.id,
+        approverStakeholderId: approvalSeed.approverStakeholderId,
+        approverEmployeeHash: approvalSeed.approverEmployeeHash,
+        approverRole: approvalSeed.approverRole,
+        decision: "APPROVED",
+        signatureHash: approvalSeed.signatureHash,
+        txHash: demoTenderTxHash,
+        blockchainStatus: "MOCK_CONFIRMED"
+      }
+    });
+  }
+
+  const proposalPackage = await prisma.proposalPackage.upsert({
+    where: {
+      tenderId_vendorEmployeeHash: {
+        tenderId: tender.id,
+        vendorEmployeeHash: vendorHash
+      }
+    },
+    update: {
+      vendorStakeholderId: requireStakeholder("vendor"),
+      packageHash: stableHash(`${demoTenderCode}:proposal-package:vendor`),
+      status: "SUBMITTED",
+      submittedAt: new Date(),
+      txHash: "0xmockseedproposalpackage0000000000000000000000000000000000000000",
+      blockchainStatus: "MOCK_CONFIRMED"
+    },
+    create: {
+      id: demoProposalPackageId,
+      tenderId: tender.id,
+      vendorStakeholderId: requireStakeholder("vendor"),
+      vendorEmployeeHash: vendorHash,
+      packageHash: stableHash(`${demoTenderCode}:proposal-package:vendor`),
+      status: "SUBMITTED",
+      submittedAt: new Date(),
+      txHash: "0xmockseedproposalpackage0000000000000000000000000000000000000000",
+      blockchainStatus: "MOCK_CONFIRMED"
+    }
+  });
+
+  const envelopeSeeds = [
+    { envelopeType: "ELIGIBILITY", keyId: "kms-demo-eligibility-v1" },
+    { envelopeType: "TECHNICAL", keyId: "kms-demo-technical-v1" },
+    { envelopeType: "FINANCIAL", keyId: "kms-demo-financial-v1" },
+    { envelopeType: "SUPPORTING_DOCUMENTS", keyId: "kms-demo-supporting-v1" },
+    { envelopeType: "TENDER_SECURITY", keyId: "kms-demo-security-v1" }
+  ] as const;
+  const envelopes = new Map<string, string>();
+
+  for (const envelopeSeed of envelopeSeeds) {
+    const envelope = await prisma.proposalEnvelope.upsert({
+      where: {
+        proposalPackageId_envelopeType: {
+          proposalPackageId: proposalPackage.id,
+          envelopeType: envelopeSeed.envelopeType
+        }
+      },
+      update: {
+        encryptedFileHash: stableHash(`${demoTenderCode}:encrypted:${envelopeSeed.envelopeType}`),
+        envelopeManifestHash: stableHash(`${demoTenderCode}:envelope-manifest:${envelopeSeed.envelopeType}`),
+        encryptionAlgorithm: "AES-256-GCM",
+        keyId: envelopeSeed.keyId,
+        storageReference: `mock-storage://${demoTenderCode}/${envelopeSeed.envelopeType.toLowerCase()}.enc`,
+        ipfsCid: `mock-cid-${demoTenderCode.toLowerCase()}-${envelopeSeed.envelopeType.toLowerCase()}`,
+        txHash: "0xmockseedenvelopecommit000000000000000000000000000000000000000",
+        blockchainStatus: "MOCK_CONFIRMED"
+      },
+      create: {
+        proposalPackageId: proposalPackage.id,
+        envelopeType: envelopeSeed.envelopeType,
+        encryptedFileHash: stableHash(`${demoTenderCode}:encrypted:${envelopeSeed.envelopeType}`),
+        envelopeManifestHash: stableHash(`${demoTenderCode}:envelope-manifest:${envelopeSeed.envelopeType}`),
+        encryptionAlgorithm: "AES-256-GCM",
+        keyId: envelopeSeed.keyId,
+        storageReference: `mock-storage://${demoTenderCode}/${envelopeSeed.envelopeType.toLowerCase()}.enc`,
+        ipfsCid: `mock-cid-${demoTenderCode.toLowerCase()}-${envelopeSeed.envelopeType.toLowerCase()}`,
+        txHash: "0xmockseedenvelopecommit000000000000000000000000000000000000000",
+        blockchainStatus: "MOCK_CONFIRMED"
+      }
+    });
+
+    envelopes.set(envelopeSeed.envelopeType, envelope.id);
+
+    await prisma.encryptedFileReference.upsert({
+      where: {
+        storageKey: `${demoTenderCode}/${envelopeSeed.envelopeType.toLowerCase()}.enc`
+      },
+      update: {
+        tenderId: tender.id,
+        proposalEnvelopeId: envelope.id,
+        storageProvider: "mock",
+        encryptedFileHash: stableHash(`${demoTenderCode}:encrypted:${envelopeSeed.envelopeType}`),
+        contentType: "application/octet-stream",
+        byteSize: 4096,
+        originalFilename: `${envelopeSeed.envelopeType.toLowerCase()}-proposal.pdf.enc`,
+        encryptionAlgorithm: "AES-256-GCM"
+      },
+      create: {
+        tenderId: tender.id,
+        proposalEnvelopeId: envelope.id,
+        storageProvider: "mock",
+        storageKey: `${demoTenderCode}/${envelopeSeed.envelopeType.toLowerCase()}.enc`,
+        encryptedFileHash: stableHash(`${demoTenderCode}:encrypted:${envelopeSeed.envelopeType}`),
+        contentType: "application/octet-stream",
+        byteSize: 4096,
+        originalFilename: `${envelopeSeed.envelopeType.toLowerCase()}-proposal.pdf.enc`,
+        encryptionAlgorithm: "AES-256-GCM"
+      }
+    });
+  }
+
+  const keyReleasePolicies = [
+    {
+      envelopeType: "ELIGIBILITY",
+      allowedRole: "TEC_MEMBER",
+      requiredTenderState: "TECHNICAL_EVALUATION"
+    },
+    {
+      envelopeType: "TECHNICAL",
+      allowedRole: "TEC_CHAIR",
+      requiredTenderState: "TECHNICAL_EVALUATION"
+    },
+    {
+      envelopeType: "FINANCIAL",
+      allowedRole: "TEC_CHAIR",
+      requiredTenderState: "FINANCIAL_EVALUATION"
+    },
+    {
+      envelopeType: "TENDER_SECURITY",
+      allowedRole: "FINANCIAL_INSTITUTION_OFFICER",
+      requiredTenderState: "AWARD_APPROVED"
+    }
+  ] as const;
+
+  for (const policySeed of keyReleasePolicies) {
+    await prisma.keyReleasePolicy.upsert({
+      where: {
+        tenderId_envelopeType_allowedRole_requiredTenderState: {
+          tenderId: tender.id,
+          envelopeType: policySeed.envelopeType,
+          allowedRole: policySeed.allowedRole,
+          requiredTenderState: policySeed.requiredTenderState
+        }
+      },
+      update: {
+        proposalEnvelopeId: envelopes.get(policySeed.envelopeType),
+        requiresIntegrityCheck: true,
+        isActive: true
+      },
+      create: {
+        tenderId: tender.id,
+        proposalEnvelopeId: envelopes.get(policySeed.envelopeType),
+        envelopeType: policySeed.envelopeType,
+        allowedRole: policySeed.allowedRole,
+        requiredTenderState: policySeed.requiredTenderState,
+        requiresIntegrityCheck: true,
+        isActive: true
+      }
+    });
+  }
+
+  const technicalEnvelopeId = envelopes.get("TECHNICAL");
+
+  if (!technicalEnvelopeId) {
+    throw new Error("TECHNICAL proposal envelope is required for demo seeding.");
+  }
+
+  const technicalPolicy = await prisma.keyReleasePolicy.findFirstOrThrow({
+    where: {
+      tenderId: tender.id,
+      envelopeType: "TECHNICAL",
+      allowedRole: "TEC_CHAIR",
+      requiredTenderState: "TECHNICAL_EVALUATION"
+    }
+  });
+
+  await prisma.keyReleaseRequest.upsert({
+    where: { id: "key-release-request-demo-technical" },
+    update: {
+      tenderId: tender.id,
+      proposalEnvelopeId: technicalEnvelopeId,
+      policyId: technicalPolicy.id,
+      requesterStakeholderId: requireStakeholder("tecChair"),
+      requesterEmployeeHash: createEmployeeHash("TEC-CHAIR-001"),
+      requesterRole: "TEC_CHAIR",
+      requestedTenderState: "TECHNICAL_EVALUATION",
+      status: "APPROVED",
+      rejectionReason: null,
+      keyMaterialReference: "kms://mock/releases/technical-envelope-demo",
+      releasedAt: new Date()
+    },
+    create: {
+      id: "key-release-request-demo-technical",
+      tenderId: tender.id,
+      proposalEnvelopeId: technicalEnvelopeId,
+      policyId: technicalPolicy.id,
+      requesterStakeholderId: requireStakeholder("tecChair"),
+      requesterEmployeeHash: createEmployeeHash("TEC-CHAIR-001"),
+      requesterRole: "TEC_CHAIR",
+      requestedTenderState: "TECHNICAL_EVALUATION",
+      status: "APPROVED",
+      keyMaterialReference: "kms://mock/releases/technical-envelope-demo",
+      releasedAt: new Date()
+    }
+  });
+
+  const conflictDeclarations = [
+    {
+      stakeholderKey: "tecMember",
+      actorEmployeeHash: createEmployeeHash("EVAL-001"),
+      actorRole: "TEC_MEMBER",
+      declarationStatus: "DECLARED_NO_CONFLICT"
+    },
+    {
+      stakeholderKey: "tecChair",
+      actorEmployeeHash: createEmployeeHash("TEC-CHAIR-001"),
+      actorRole: "TEC_CHAIR",
+      declarationStatus: "DECLARED_NO_CONFLICT"
+    }
+  ] as const;
+
+  for (const declarationSeed of conflictDeclarations) {
+    await prisma.conflictOfInterestDeclaration.upsert({
+      where: {
+        tenderId_actorEmployeeHash: {
+          tenderId: tender.id,
+          actorEmployeeHash: declarationSeed.actorEmployeeHash
+        }
+      },
+      update: {
+        stakeholderId: requireStakeholder(declarationSeed.stakeholderKey),
+        actorRole: declarationSeed.actorRole,
+        declarationStatus: declarationSeed.declarationStatus,
+        declarationHash: stableHash(`${demoTenderCode}:coi:${declarationSeed.actorEmployeeHash}`),
+        txHash: "0xmockseedconflictdeclare00000000000000000000000000000000000000",
+        blockchainStatus: "MOCK_CONFIRMED"
+      },
+      create: {
+        tenderId: tender.id,
+        stakeholderId: requireStakeholder(declarationSeed.stakeholderKey),
+        actorEmployeeHash: declarationSeed.actorEmployeeHash,
+        actorRole: declarationSeed.actorRole,
+        declarationStatus: declarationSeed.declarationStatus,
+        declarationHash: stableHash(`${demoTenderCode}:coi:${declarationSeed.actorEmployeeHash}`),
+        txHash: "0xmockseedconflictdeclare00000000000000000000000000000000000000",
+        blockchainStatus: "MOCK_CONFIRMED"
+      }
+    });
+  }
+
+  const evaluationReport = await prisma.evaluationReport.upsert({
+    where: {
+      tenderId_reportHash: {
+        tenderId: tender.id,
+        reportHash: stableHash(`${demoTenderCode}:evaluation-report:v1`)
+      }
+    },
+    update: {
+      chairStakeholderId: requireStakeholder("tecChair"),
+      technicalScoreHash: stableHash(`${demoTenderCode}:technical-score:v1`),
+      financialScoreHash: stableHash(`${demoTenderCode}:financial-score:v1`),
+      status: "SUBMITTED",
+      submittedByEmployeeHash: createEmployeeHash("TEC-CHAIR-001"),
+      submittedByRole: "TEC_CHAIR",
+      txHash: "0xmockseedevaluationreport0000000000000000000000000000000000000",
+      blockchainStatus: "MOCK_CONFIRMED"
+    },
+    create: {
+      id: demoEvaluationReportId,
+      tenderId: tender.id,
+      chairStakeholderId: requireStakeholder("tecChair"),
+      reportHash: stableHash(`${demoTenderCode}:evaluation-report:v1`),
+      technicalScoreHash: stableHash(`${demoTenderCode}:technical-score:v1`),
+      financialScoreHash: stableHash(`${demoTenderCode}:financial-score:v1`),
+      status: "SUBMITTED",
+      submittedByEmployeeHash: createEmployeeHash("TEC-CHAIR-001"),
+      submittedByRole: "TEC_CHAIR",
+      txHash: "0xmockseedevaluationreport0000000000000000000000000000000000000",
+      blockchainStatus: "MOCK_CONFIRMED"
+    }
+  });
+
+  const awardRecommendation = await prisma.awardRecommendation.upsert({
+    where: {
+      tenderId_recommendationHash: {
+        tenderId: tender.id,
+        recommendationHash: stableHash(`${demoTenderCode}:award-recommendation:v1`)
+      }
+    },
+    update: {
+      evaluationReportId: evaluationReport.id,
+      recommendedVendorStakeholderId: requireStakeholder("vendor"),
+      submittedByEmployeeHash: createEmployeeHash("TEC-CHAIR-001"),
+      submittedByRole: "TEC_CHAIR",
+      status: "APPROVAL_PENDING",
+      txHash: "0xmockseedawardrecommend00000000000000000000000000000000000000",
+      blockchainStatus: "MOCK_CONFIRMED"
+    },
+    create: {
+      id: demoAwardRecommendationId,
+      tenderId: tender.id,
+      evaluationReportId: evaluationReport.id,
+      recommendedVendorStakeholderId: requireStakeholder("vendor"),
+      recommendationHash: stableHash(`${demoTenderCode}:award-recommendation:v1`),
+      submittedByEmployeeHash: createEmployeeHash("TEC-CHAIR-001"),
+      submittedByRole: "TEC_CHAIR",
+      status: "APPROVAL_PENDING",
+      txHash: "0xmockseedawardrecommend00000000000000000000000000000000000000",
+      blockchainStatus: "MOCK_CONFIRMED"
+    }
+  });
+
+  await prisma.awardApproval.upsert({
+    where: {
+      awardRecommendationId_approverEmployeeHash: {
+        awardRecommendationId: awardRecommendation.id,
+        approverEmployeeHash: createEmployeeHash("APP-001")
+      }
+    },
+    update: {
+      tenderId: tender.id,
+      approverStakeholderId: requireStakeholder("approvingOfficer"),
+      approverRole: "APPROVING_OFFICER",
+      decision: "APPROVED",
+      signatureHash: stableHash(`${demoTenderCode}:award-approval:approving-officer`),
+      txHash: "0xmockseedawardapproval000000000000000000000000000000000000000",
+      blockchainStatus: "MOCK_CONFIRMED"
+    },
+    create: {
+      tenderId: tender.id,
+      awardRecommendationId: awardRecommendation.id,
+      approverStakeholderId: requireStakeholder("approvingOfficer"),
+      approverEmployeeHash: createEmployeeHash("APP-001"),
+      approverRole: "APPROVING_OFFICER",
+      decision: "APPROVED",
+      signatureHash: stableHash(`${demoTenderCode}:award-approval:approving-officer`),
+      txHash: "0xmockseedawardapproval000000000000000000000000000000000000000",
+      blockchainStatus: "MOCK_CONFIRMED"
+    }
+  });
+
+  const publicProofs = [
+    {
+      id: "public-proof-demo-manifest",
+      proofType: "TENDER_MANIFEST",
+      proofHash: stableHash(`${demoTenderCode}:public:manifest`),
+      sourceTxHash: demoTenderTxHash,
+      publicLabel: "Tender manifest committed"
+    },
+    {
+      id: "public-proof-demo-proposal-package",
+      proofType: "PROPOSAL_PACKAGE",
+      proofHash: stableHash(`${demoTenderCode}:public:proposal-package`),
+      sourceTxHash: "0xmockseedproposalpackage0000000000000000000000000000000000000000",
+      publicLabel: "Vendor proposal package commitment"
+    },
+    {
+      id: "public-proof-demo-award-recommendation",
+      proofType: "AWARD_RECOMMENDATION",
+      proofHash: stableHash(`${demoTenderCode}:public:award-recommendation`),
+      sourceTxHash: "0xmockseedawardrecommend00000000000000000000000000000000000000",
+      publicLabel: "Award recommendation committed"
+    }
+  ] as const;
+
+  for (const proofSeed of publicProofs) {
+    await prisma.publicAuditProof.upsert({
+      where: { id: proofSeed.id },
+      update: {
+        tenderId: tender.id,
+        proofType: proofSeed.proofType,
+        proofHash: proofSeed.proofHash,
+        sourceTxHash: proofSeed.sourceTxHash,
+        blockchainStatus: "MOCK_CONFIRMED",
+        publicLabel: proofSeed.publicLabel,
+        metadata: {
+          seeded: true,
+          tenderCode: demoTenderCode,
+          privacy: "No raw Employment ID or proposal content is exposed in this public proof."
+        }
+      },
+      create: {
+        id: proofSeed.id,
+        tenderId: tender.id,
+        proofType: proofSeed.proofType,
+        proofHash: proofSeed.proofHash,
+        sourceTxHash: proofSeed.sourceTxHash,
+        blockchainStatus: "MOCK_CONFIRMED",
+        publicLabel: proofSeed.publicLabel,
+        metadata: {
+          seeded: true,
+          tenderCode: demoTenderCode,
+          privacy: "No raw Employment ID or proposal content is exposed in this public proof."
+        }
+      }
+    });
+  }
 
   const existingTransition = await prisma.procurementTransition.findFirst({
     where: {

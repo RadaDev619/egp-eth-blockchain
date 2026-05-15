@@ -13,29 +13,58 @@ enum Role {
   EVALUATOR
   FINANCE_OFFICER
   AUDITOR
+  TEC_MEMBER
+  TEC_CHAIR
+  APPROVING_OFFICER
+  FINANCIAL_INSTITUTION_OFFICER
 }
 
 enum TenderState {
+  DRAFT
+  PUBLICATION_PENDING
+  PUBLISHED
   CREATED
   OPEN_FOR_BIDS
+  OPEN_FOR_PROPOSALS
   BID_SUBMITTED
+  CLOSED
   EVALUATION_PENDING
+  TECHNICAL_EVALUATION
+  FINANCIAL_EVALUATION
   EVALUATION_APPROVED
+  AWARD_RECOMMENDED
+  AWARD_APPROVED
   PAYMENT_PENDING
   PAYMENT_APPROVED
+  CONTRACT_SIGNED
   COMPLETED
+  ARCHIVED
   CANCELLED
 }
 
 enum ProcurementAction {
   CREATE_TENDER
+  CREATE_TENDER_MANIFEST
+  REQUEST_PUBLICATION_APPROVAL
+  APPROVE_TENDER_PUBLICATION
   SUBMIT_BID
+  SUBMIT_PROPOSAL_PACKAGE
+  COMMIT_PROPOSAL_ENVELOPE
   APPROVE_EVALUATION
   REJECT_EVALUATION
   APPROVE_PAYMENT
   REJECT_PAYMENT
   CREATE_TENDER_VERSION
   CANCEL_TENDER
+  CLOSE_TENDER
+  REQUEST_KEY_RELEASE
+  RELEASE_ENVELOPE_KEY
+  DECLARE_CONFLICT_OF_INTEREST
+  SUBMIT_EVALUATION_REPORT
+  SUBMIT_AWARD_RECOMMENDATION
+  APPROVE_AWARD
+  COMMIT_CONTRACT_HASH
+  ARCHIVE_TENDER
   VERIFY_DOCUMENT
   COMPLETE_PROCUREMENT
 }
@@ -68,6 +97,83 @@ enum BlockchainStatus {
   MOCK_CONFIRMED
 }
 
+enum StakeholderType {
+  VENDOR
+  PROCURING_AGENCY
+  EVALUATION_COMMITTEE
+  FINANCIAL_INSTITUTION
+  AUDIT_AUTHORITY
+}
+
+enum TenderAssignmentStatus {
+  INVITED
+  ACTIVE
+  SUSPENDED
+  REVOKED
+}
+
+enum TenderManifestStatus {
+  DRAFT
+  ACTIVE
+  SUPERSEDED
+}
+
+enum ProposalEnvelopeType {
+  ELIGIBILITY
+  TECHNICAL
+  FINANCIAL
+  SUPPORTING_DOCUMENTS
+  TENDER_SECURITY
+}
+
+enum ProposalPackageStatus {
+  DRAFT
+  SUBMITTED
+  WITHDRAWN
+  OPENED
+  EVALUATED
+}
+
+enum KeyReleaseStatus {
+  REQUESTED
+  APPROVED
+  DENIED
+  RELEASED
+  EXPIRED
+}
+
+enum ConflictDeclarationStatus {
+  PENDING
+  DECLARED_NO_CONFLICT
+  DECLARED_CONFLICT
+  REVIEW_REQUIRED
+}
+
+enum EvaluationReportStatus {
+  DRAFT
+  SUBMITTED
+  FINALIZED
+}
+
+enum AwardRecommendationStatus {
+  RECOMMENDED
+  APPROVAL_PENDING
+  APPROVED
+  REJECTED
+}
+
+enum PublicAuditProofType {
+  TENDER_MANIFEST
+  PROPOSAL_PACKAGE
+  ENVELOPE_COMMITMENT
+  KEY_RELEASE
+  EVALUATION_REPORT
+  AWARD_RECOMMENDATION
+  AWARD_APPROVAL
+  CONTRACT_HASH
+  TAMPERING_DETECTED
+}
+
 model NDIProfile {
   id             String    @id @default(cuid())
   holderDID      String    @unique
@@ -85,14 +191,15 @@ model NDIProfile {
 }
 
 model User {
-  id           String      @id @default(cuid())
+  id           String        @id @default(cuid())
   ndiProfileId String
-  ndiProfile   NDIProfile  @relation(fields: [ndiProfileId], references: [id])
+  ndiProfile   NDIProfile    @relation(fields: [ndiProfileId], references: [id])
   role         Role
-  isActive     Boolean     @default(true)
-  createdAt    DateTime    @default(now())
-  updatedAt    DateTime    @updatedAt
+  isActive     Boolean       @default(true)
+  createdAt    DateTime      @default(now())
+  updatedAt    DateTime      @updatedAt
   sessions     AuthSession[]
+  stakeholders Stakeholder[]
 }
 
 model RolePermission {
@@ -130,20 +237,32 @@ model NDIProofRequest {
 }
 
 model Tender {
-  id                    String                  @id @default(cuid())
-  tenderCode            String                  @unique
-  agency                String
-  currentState          TenderState
-  currentVersion        Int                     @default(1)
-  createdByEmployeeHash String
-  createdByRole         Role
-  createdTxHash         String?
-  createdAt             DateTime                @default(now())
-  updatedAt             DateTime                @updatedAt
-  versions              TenderVersion[]
-  bids                  Bid[]
-  approvals             Approval[]
-  transitions           ProcurementTransition[]
+  id                      String                          @id @default(cuid())
+  tenderCode              String                          @unique
+  agency                  String
+  currentState            TenderState
+  currentVersion          Int                             @default(1)
+  createdByEmployeeHash   String
+  createdByRole           Role
+  createdTxHash           String?
+  createdAt               DateTime                        @default(now())
+  updatedAt               DateTime                        @updatedAt
+  versions                TenderVersion[]
+  bids                    Bid[]
+  approvals               Approval[]
+  transitions             ProcurementTransition[]
+  roleAssignments         TenderRoleAssignment[]
+  manifests               TenderManifest[]
+  publicationApprovals    TenderPublicationApproval[]
+  proposalPackages        ProposalPackage[]
+  encryptedFileReferences EncryptedFileReference[]
+  keyReleasePolicies      KeyReleasePolicy[]
+  keyReleaseRequests      KeyReleaseRequest[]
+  conflictDeclarations    ConflictOfInterestDeclaration[]
+  evaluationReports       EvaluationReport[]
+  awardRecommendations    AwardRecommendation[]
+  awardApprovals          AwardApproval[]
+  publicAuditProofs       PublicAuditProof[]
 }
 
 model TenderVersion {
@@ -162,6 +281,322 @@ model TenderVersion {
   createdAt             DateTime @default(now())
 
   @@unique([tenderId, versionNumber])
+}
+
+model Stakeholder {
+  id                       String                          @id @default(cuid())
+  userId                   String?
+  user                     User?                           @relation(fields: [userId], references: [id])
+  stakeholderType          StakeholderType
+  displayName              String
+  organization             String
+  employeeHash             String?
+  businessIdentifierHash   String?
+  publicIdentifier         String?
+  createdAt                DateTime                        @default(now())
+  updatedAt                DateTime                        @updatedAt
+  assignments              TenderRoleAssignment[]
+  vendorProposalPackages   ProposalPackage[]               @relation("VendorProposalPackages")
+  keyReleaseRequests       KeyReleaseRequest[]             @relation("RequesterKeyReleaseRequests")
+  conflictDeclarations     ConflictOfInterestDeclaration[]
+  chairedEvaluationReports EvaluationReport[]              @relation("ChairEvaluationReports")
+  recommendedAwards        AwardRecommendation[]           @relation("RecommendedVendorAwards")
+  awardApprovals           AwardApproval[]                 @relation("ApproverAwardApprovals")
+  publicationApprovals     TenderPublicationApproval[]     @relation("PublicationApproverApprovals")
+
+  @@unique([userId, stakeholderType])
+  @@index([stakeholderType])
+  @@index([employeeHash])
+  @@index([businessIdentifierHash])
+}
+
+model TenderRoleAssignment {
+  id                     String                 @id @default(cuid())
+  tenderId               String
+  tender                 Tender                 @relation(fields: [tenderId], references: [id])
+  stakeholderId          String
+  stakeholder            Stakeholder            @relation(fields: [stakeholderId], references: [id])
+  role                   Role
+  status                 TenderAssignmentStatus @default(ACTIVE)
+  assignedByEmployeeHash String?
+  assignedAt             DateTime               @default(now())
+  activatedAt            DateTime?
+  revokedAt              DateTime?
+  metadata               Json?
+  createdAt              DateTime               @default(now())
+  updatedAt              DateTime               @updatedAt
+
+  @@unique([tenderId, stakeholderId, role])
+  @@index([tenderId])
+  @@index([stakeholderId])
+  @@index([role])
+}
+
+model TenderManifest {
+  id                    String                      @id @default(cuid())
+  tenderId              String
+  tender                Tender                      @relation(fields: [tenderId], references: [id])
+  versionNumber         Int
+  manifestHash          String
+  rulesHash             String?
+  criteriaHash          String?
+  documentsHash         String?
+  approvalPolicy        Json
+  publicationThreshold  Int                         @default(2)
+  status                TenderManifestStatus        @default(DRAFT)
+  createdByEmployeeHash String
+  createdByRole         Role
+  txHash                String?
+  blockchainStatus      BlockchainStatus            @default(NOT_SUBMITTED)
+  createdAt             DateTime                    @default(now())
+  updatedAt             DateTime                    @updatedAt
+  publicationApprovals  TenderPublicationApproval[]
+
+  @@unique([tenderId, versionNumber])
+  @@index([manifestHash])
+  @@index([status])
+}
+
+model TenderPublicationApproval {
+  id                    String           @id @default(cuid())
+  tenderId              String
+  tender                Tender           @relation(fields: [tenderId], references: [id])
+  manifestId            String
+  manifest              TenderManifest   @relation(fields: [manifestId], references: [id])
+  approverStakeholderId String?
+  approverStakeholder   Stakeholder?     @relation("PublicationApproverApprovals", fields: [approverStakeholderId], references: [id])
+  approverEmployeeHash  String
+  approverRole          Role
+  decision              ApprovalDecision
+  signatureHash         String?
+  comments              String?
+  txHash                String?
+  blockchainStatus      BlockchainStatus @default(NOT_SUBMITTED)
+  createdAt             DateTime         @default(now())
+
+  @@unique([manifestId, approverEmployeeHash])
+  @@index([tenderId])
+  @@index([approverRole])
+}
+
+model ProposalPackage {
+  id                  String                @id @default(cuid())
+  tenderId            String
+  tender              Tender                @relation(fields: [tenderId], references: [id])
+  vendorStakeholderId String?
+  vendorStakeholder   Stakeholder?          @relation("VendorProposalPackages", fields: [vendorStakeholderId], references: [id])
+  vendorEmployeeHash  String
+  packageHash         String
+  status              ProposalPackageStatus @default(DRAFT)
+  submittedAt         DateTime?
+  txHash              String?
+  blockchainStatus    BlockchainStatus      @default(NOT_SUBMITTED)
+  createdAt           DateTime              @default(now())
+  updatedAt           DateTime              @updatedAt
+  envelopes           ProposalEnvelope[]
+
+  @@unique([tenderId, vendorEmployeeHash])
+  @@index([packageHash])
+  @@index([status])
+}
+
+model ProposalEnvelope {
+  id                   String                   @id @default(cuid())
+  proposalPackageId    String
+  proposalPackage      ProposalPackage          @relation(fields: [proposalPackageId], references: [id])
+  envelopeType         ProposalEnvelopeType
+  encryptedFileHash    String
+  envelopeManifestHash String
+  encryptionAlgorithm  String                   @default("AES-256-GCM")
+  keyId                String?
+  storageReference     String?
+  ipfsCid              String?
+  txHash               String?
+  blockchainStatus     BlockchainStatus         @default(NOT_SUBMITTED)
+  createdAt            DateTime                 @default(now())
+  updatedAt            DateTime                 @updatedAt
+  fileReferences       EncryptedFileReference[]
+  keyReleasePolicies   KeyReleasePolicy[]
+  keyReleaseRequests   KeyReleaseRequest[]
+
+  @@unique([proposalPackageId, envelopeType])
+  @@index([envelopeType])
+  @@index([encryptedFileHash])
+}
+
+model EncryptedFileReference {
+  id                  String            @id @default(cuid())
+  tenderId            String?
+  tender              Tender?           @relation(fields: [tenderId], references: [id])
+  proposalEnvelopeId  String?
+  proposalEnvelope    ProposalEnvelope? @relation(fields: [proposalEnvelopeId], references: [id])
+  storageProvider     String
+  storageKey          String            @unique
+  encryptedFileHash   String
+  contentType         String
+  byteSize            Int
+  originalFilename    String?
+  iv                  String?
+  authTag             String?
+  encryptionAlgorithm String            @default("AES-256-GCM")
+  createdAt           DateTime          @default(now())
+
+  @@index([tenderId])
+  @@index([proposalEnvelopeId])
+  @@index([encryptedFileHash])
+}
+
+model KeyReleasePolicy {
+  id                     String               @id @default(cuid())
+  tenderId               String
+  tender                 Tender               @relation(fields: [tenderId], references: [id])
+  proposalEnvelopeId     String?
+  proposalEnvelope       ProposalEnvelope?    @relation(fields: [proposalEnvelopeId], references: [id])
+  envelopeType           ProposalEnvelopeType
+  allowedRole            Role
+  requiredTenderState    TenderState
+  requiresIntegrityCheck Boolean              @default(true)
+  isActive               Boolean              @default(true)
+  createdAt              DateTime             @default(now())
+  updatedAt              DateTime             @updatedAt
+  requests               KeyReleaseRequest[]
+
+  @@unique([tenderId, envelopeType, allowedRole, requiredTenderState])
+  @@index([tenderId])
+  @@index([allowedRole])
+  @@index([isActive])
+}
+
+model KeyReleaseRequest {
+  id                     String            @id @default(cuid())
+  tenderId               String
+  tender                 Tender            @relation(fields: [tenderId], references: [id])
+  proposalEnvelopeId     String
+  proposalEnvelope       ProposalEnvelope  @relation(fields: [proposalEnvelopeId], references: [id])
+  policyId               String?
+  policy                 KeyReleasePolicy? @relation(fields: [policyId], references: [id])
+  requesterStakeholderId String?
+  requesterStakeholder   Stakeholder?      @relation("RequesterKeyReleaseRequests", fields: [requesterStakeholderId], references: [id])
+  requesterEmployeeHash  String
+  requesterRole          Role
+  requestedTenderState   TenderState
+  status                 KeyReleaseStatus  @default(REQUESTED)
+  rejectionReason        String?
+  keyMaterialReference   String?
+  releasedAt             DateTime?
+  createdAt              DateTime          @default(now())
+  updatedAt              DateTime          @updatedAt
+
+  @@index([tenderId])
+  @@index([proposalEnvelopeId])
+  @@index([requesterRole])
+  @@index([status])
+}
+
+model ConflictOfInterestDeclaration {
+  id                String                    @id @default(cuid())
+  tenderId          String
+  tender            Tender                    @relation(fields: [tenderId], references: [id])
+  stakeholderId     String?
+  stakeholder       Stakeholder?              @relation(fields: [stakeholderId], references: [id])
+  actorEmployeeHash String
+  actorRole         Role
+  declarationStatus ConflictDeclarationStatus
+  declarationHash   String
+  signedAt          DateTime                  @default(now())
+  txHash            String?
+  blockchainStatus  BlockchainStatus          @default(NOT_SUBMITTED)
+  createdAt         DateTime                  @default(now())
+
+  @@unique([tenderId, actorEmployeeHash])
+  @@index([tenderId])
+  @@index([declarationStatus])
+}
+
+model EvaluationReport {
+  id                      String                 @id @default(cuid())
+  tenderId                String
+  tender                  Tender                 @relation(fields: [tenderId], references: [id])
+  chairStakeholderId      String?
+  chairStakeholder        Stakeholder?           @relation("ChairEvaluationReports", fields: [chairStakeholderId], references: [id])
+  reportHash              String
+  technicalScoreHash      String?
+  financialScoreHash      String?
+  status                  EvaluationReportStatus @default(DRAFT)
+  submittedByEmployeeHash String
+  submittedByRole         Role
+  txHash                  String?
+  blockchainStatus        BlockchainStatus       @default(NOT_SUBMITTED)
+  createdAt               DateTime               @default(now())
+  updatedAt               DateTime               @updatedAt
+  awardRecommendations    AwardRecommendation[]
+
+  @@unique([tenderId, reportHash])
+  @@index([tenderId])
+  @@index([status])
+}
+
+model AwardRecommendation {
+  id                             String                    @id @default(cuid())
+  tenderId                       String
+  tender                         Tender                    @relation(fields: [tenderId], references: [id])
+  evaluationReportId             String?
+  evaluationReport               EvaluationReport?         @relation(fields: [evaluationReportId], references: [id])
+  recommendedVendorStakeholderId String?
+  recommendedVendorStakeholder   Stakeholder?              @relation("RecommendedVendorAwards", fields: [recommendedVendorStakeholderId], references: [id])
+  recommendationHash             String
+  submittedByEmployeeHash        String
+  submittedByRole                Role
+  status                         AwardRecommendationStatus @default(RECOMMENDED)
+  txHash                         String?
+  blockchainStatus               BlockchainStatus          @default(NOT_SUBMITTED)
+  createdAt                      DateTime                  @default(now())
+  updatedAt                      DateTime                  @updatedAt
+  approvals                      AwardApproval[]
+
+  @@unique([tenderId, recommendationHash])
+  @@index([tenderId])
+  @@index([status])
+}
+
+model AwardApproval {
+  id                    String              @id @default(cuid())
+  tenderId              String
+  tender                Tender              @relation(fields: [tenderId], references: [id])
+  awardRecommendationId String
+  awardRecommendation   AwardRecommendation @relation(fields: [awardRecommendationId], references: [id])
+  approverStakeholderId String?
+  approverStakeholder   Stakeholder?        @relation("ApproverAwardApprovals", fields: [approverStakeholderId], references: [id])
+  approverEmployeeHash  String
+  approverRole          Role
+  decision              ApprovalDecision
+  signatureHash         String?
+  comments              String?
+  txHash                String?
+  blockchainStatus      BlockchainStatus    @default(NOT_SUBMITTED)
+  createdAt             DateTime            @default(now())
+
+  @@unique([awardRecommendationId, approverEmployeeHash])
+  @@index([tenderId])
+  @@index([approverRole])
+}
+
+model PublicAuditProof {
+  id               String               @id @default(cuid())
+  tenderId         String
+  tender           Tender               @relation(fields: [tenderId], references: [id])
+  proofType        PublicAuditProofType
+  proofHash        String
+  sourceTxHash     String?
+  blockchainStatus BlockchainStatus?
+  publicLabel      String
+  metadata         Json?
+  createdAt        DateTime             @default(now())
+
+  @@unique([tenderId, proofType, proofHash])
+  @@index([tenderId])
+  @@index([proofType])
+  @@index([sourceTxHash])
 }
 
 model Bid {
@@ -195,9 +630,9 @@ model Approval {
 }
 
 model ProcurementTransition {
-  id                String             @id @default(cuid())
+  id                String            @id @default(cuid())
   tenderId          String?
-  tender            Tender?            @relation(fields: [tenderId], references: [id])
+  tender            Tender?           @relation(fields: [tenderId], references: [id])
   action            ProcurementAction
   actorEmployeeHash String?
   actorRole         Role?
@@ -207,7 +642,7 @@ model ProcurementTransition {
   rejectionReason   String?
   metadata          Json?
   txHash            String?
-  createdAt         DateTime           @default(now())
+  createdAt         DateTime          @default(now())
 
   @@index([tenderId])
   @@index([allowed])
