@@ -59,6 +59,109 @@ describe("procurementStateMachine", () => {
     });
   });
 
+  it("supports the updated secure procurement lifecycle", () => {
+    expect(
+      canTransition({
+        action: ProcurementAction.CREATE_TENDER_MANIFEST,
+        actorRole: "PROCUREMENT_OFFICER",
+        actorEmployeeHash,
+        currentState: null
+      })
+    ).toMatchObject({ allowed: true, fromState: null, toState: TenderState.DRAFT });
+
+    expect(
+      canTransition({
+        action: ProcurementAction.REQUEST_PUBLICATION_APPROVAL,
+        actorRole: "PROCUREMENT_OFFICER",
+        actorEmployeeHash,
+        currentState: TenderState.DRAFT
+      })
+    ).toMatchObject({ allowed: true, toState: TenderState.PUBLICATION_PENDING });
+
+    expect(
+      canTransition({
+        action: ProcurementAction.APPROVE_TENDER_PUBLICATION,
+        actorRole: "APPROVING_OFFICER",
+        actorEmployeeHash,
+        currentState: TenderState.PUBLICATION_PENDING
+      })
+    ).toMatchObject({ allowed: true, toState: TenderState.PUBLISHED });
+
+    expect(
+      canTransition({
+        action: ProcurementAction.SUBMIT_PROPOSAL_PACKAGE,
+        actorRole: "VENDOR",
+        actorEmployeeHash,
+        currentState: TenderState.PUBLISHED
+      })
+    ).toMatchObject({ allowed: true, toState: TenderState.PUBLISHED });
+
+    expect(
+      canTransition({
+        action: ProcurementAction.CLOSE_TENDER,
+        actorRole: "PROCUREMENT_OFFICER",
+        actorEmployeeHash,
+        currentState: TenderState.PUBLISHED
+      })
+    ).toMatchObject({ allowed: true, toState: TenderState.CLOSED });
+
+    expect(
+      canTransition({
+        action: ProcurementAction.REQUEST_KEY_RELEASE,
+        actorRole: "TEC_CHAIR",
+        actorEmployeeHash,
+        currentState: TenderState.CLOSED,
+        metadata: { envelopeType: "TECHNICAL" }
+      })
+    ).toMatchObject({ allowed: true, toState: TenderState.TECHNICAL_EVALUATION });
+
+    expect(
+      canTransition({
+        action: ProcurementAction.SUBMIT_EVALUATION_REPORT,
+        actorRole: "TEC_CHAIR",
+        actorEmployeeHash,
+        currentState: TenderState.TECHNICAL_EVALUATION
+      })
+    ).toMatchObject({ allowed: true, toState: TenderState.FINANCIAL_EVALUATION });
+
+    expect(
+      canTransition({
+        action: ProcurementAction.SUBMIT_AWARD_RECOMMENDATION,
+        actorRole: "TEC_CHAIR",
+        actorEmployeeHash,
+        currentState: TenderState.FINANCIAL_EVALUATION
+      })
+    ).toMatchObject({ allowed: true, toState: TenderState.AWARD_RECOMMENDED });
+
+    expect(
+      canTransition({
+        action: ProcurementAction.APPROVE_AWARD,
+        actorRole: "APPROVING_OFFICER",
+        actorEmployeeHash,
+        currentState: TenderState.AWARD_RECOMMENDED,
+        metadata: { thresholdApprovalsMet: true }
+      })
+    ).toMatchObject({ allowed: true, toState: TenderState.AWARD_APPROVED });
+
+    expect(
+      canTransition({
+        action: ProcurementAction.COMMIT_CONTRACT_HASH,
+        actorRole: "PROCUREMENT_OFFICER",
+        actorEmployeeHash,
+        currentState: TenderState.AWARD_APPROVED
+      })
+    ).toMatchObject({ allowed: true, toState: TenderState.CONTRACT_SIGNED });
+
+    expect(
+      canTransition({
+        action: ProcurementAction.ARCHIVE_TENDER,
+        actorRole: "PROCUREMENT_OFFICER",
+        actorEmployeeHash,
+        currentState: TenderState.CONTRACT_SIGNED
+      })
+    ).toMatchObject({ allowed: true, toState: TenderState.ARCHIVED });
+  });
+
   it("returns 409 when finance tries payment approval before evaluation approval", () => {
     const result = canTransition({
       action: ProcurementAction.APPROVE_PAYMENT,
@@ -184,6 +287,89 @@ describe("procurementStateMachine", () => {
     ).toThrow(ValidationError);
   });
 
+  it("blocks updated lifecycle bypass attempts with explicit reasons", () => {
+    expect(
+      canTransition({
+        action: ProcurementAction.SUBMIT_PROPOSAL_PACKAGE,
+        actorRole: "VENDOR",
+        actorEmployeeHash,
+        currentState: TenderState.CLOSED
+      })
+    ).toMatchObject({
+      allowed: false,
+      reason: "PROPOSAL_SUBMISSION_CLOSED",
+      statusCode: 409
+    });
+
+    expect(
+      canTransition({
+        action: ProcurementAction.SUBMIT_EVALUATION_REPORT,
+        actorRole: "TEC_CHAIR",
+        actorEmployeeHash,
+        currentState: TenderState.PUBLISHED
+      })
+    ).toMatchObject({
+      allowed: false,
+      reason: "TENDER_MUST_BE_CLOSED_BEFORE_EVALUATION",
+      statusCode: 409
+    });
+
+    expect(
+      canTransition({
+        action: ProcurementAction.REQUEST_KEY_RELEASE,
+        actorRole: "TEC_CHAIR",
+        actorEmployeeHash,
+        currentState: TenderState.TECHNICAL_EVALUATION,
+        metadata: { envelopeType: "FINANCIAL" }
+      })
+    ).toMatchObject({
+      allowed: false,
+      reason: "FINANCIAL_OPENING_REQUIRES_TECHNICAL_COMPLETION",
+      statusCode: 409
+    });
+
+    expect(
+      canTransition({
+        action: ProcurementAction.APPROVE_AWARD,
+        actorRole: "APPROVING_OFFICER",
+        actorEmployeeHash,
+        currentState: TenderState.FINANCIAL_EVALUATION,
+        metadata: { thresholdApprovalsMet: true }
+      })
+    ).toMatchObject({
+      allowed: false,
+      reason: "AWARD_RECOMMENDATION_REQUIRED",
+      statusCode: 409
+    });
+
+    expect(
+      canTransition({
+        action: ProcurementAction.APPROVE_AWARD,
+        actorRole: "APPROVING_OFFICER",
+        actorEmployeeHash,
+        currentState: TenderState.AWARD_RECOMMENDED,
+        metadata: { thresholdApprovalsMet: false }
+      })
+    ).toMatchObject({
+      allowed: false,
+      reason: "AWARD_APPROVAL_THRESHOLD_NOT_MET",
+      statusCode: 409
+    });
+
+    expect(
+      canTransition({
+        action: ProcurementAction.ARCHIVE_TENDER,
+        actorRole: "PROCUREMENT_OFFICER",
+        actorEmployeeHash,
+        currentState: TenderState.AWARD_APPROVED
+      })
+    ).toMatchObject({
+      allowed: false,
+      reason: "CONTRACT_PROOF_REQUIRED_BEFORE_ARCHIVE",
+      statusCode: 409
+    });
+  });
+
   it("returns 422 for invalid action payloads", () => {
     const result = canTransition({
       action: "UPDATE_TENDER",
@@ -213,5 +399,10 @@ describe("procurementStateMachine", () => {
       actorEmployeeHash,
       currentState: TenderState.CREATED
     })).toBe("EVALUATION_REQUIRED_BEFORE_PAYMENT");
+    expect(getAllowedActionsForRole("VENDOR", TenderState.PUBLISHED)).toEqual([
+      ProcurementAction.SUBMIT_PROPOSAL_PACKAGE,
+      ProcurementAction.COMMIT_PROPOSAL_ENVELOPE
+    ]);
+    expect(getNextState(ProcurementAction.CLOSE_TENDER, TenderState.OPEN_FOR_PROPOSALS)).toBe(TenderState.CLOSED);
   });
 });

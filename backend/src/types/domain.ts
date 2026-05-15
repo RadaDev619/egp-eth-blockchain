@@ -52,6 +52,7 @@ export const rolePermissions: Record<Role, Permission[]> = {
     permissions.MANAGE_TENDER_ASSIGNMENTS,
     permissions.CLOSE_TENDER,
     permissions.COMMIT_CONTRACT_HASH,
+    permissions.ARCHIVE_TENDER,
     permissions.CANCEL_TENDER
   ],
   VENDOR: [
