@@ -4,6 +4,20 @@
 
 The MVP is designed to prevent centralized or unauthorized procurement manipulation from being hidden. It must block unauthorized roles, block out-of-sequence approvals, preserve append-only history, and show successful and blocked attempts to auditors.
 
+## Updated Security Goal
+
+The updated secure-gateway MVP adds a second protection goal: confidential proposal material must not be readable by old-system administrators or unauthorized officers before the allowed procurement stage.
+
+The expanded security claims are:
+
+- Tender rules cannot be silently changed.
+- Proposal files are encrypted before old-system storage.
+- Proposal hashes prove submission integrity and time.
+- Technical and financial proposal envelopes are separated.
+- Financial envelopes cannot be decrypted before technical evaluation completes.
+- Tender publication and award approval require threshold approvals.
+- Public audit views expose proof data, not confidential proposal contents.
+
 ## Main Boundary
 
 Never trust the frontend.
@@ -18,6 +32,14 @@ The backend is responsible for:
 - Document hashing.
 - Audit logging.
 - Relayer submission.
+
+In the updated secure-gateway MVP, the backend also controls:
+
+- Tender-specific role assignment.
+- Stage-based policy checks.
+- Key release authorization.
+- Proposal envelope proof submission.
+- Publication and award threshold checks.
 
 The frontend may display state and call APIs, but it is not authoritative.
 
@@ -53,6 +75,8 @@ Roles:
 - `AUDITOR`
 
 Permissions are explicit and role-scoped in backend code and seed data. Protected APIs use auth middleware and permission middleware. Frontend-submitted roles are ignored.
+
+The updated MVP will add tender-specific assignments. A user may hold a role for one tender and no role for another tender. The backend policy engine must check identity, global role, tender assignment, tender stage, envelope type, and attempted action before releasing data or submitting proofs.
 
 Expected blocked examples:
 
@@ -140,6 +164,27 @@ IPFS/mock modes:
 
 Public IPFS storage needs privacy review. Production use should consider encryption, access control, retention policy, and data classification.
 
+## Proposal Envelope And Key Release Controls
+
+The updated MVP introduces structured proposal envelopes:
+
+- Eligibility.
+- Technical.
+- Financial.
+- Supporting documents.
+- Tender security.
+
+Security rules:
+
+- Proposal files must be encrypted before storage in the old-system simulator.
+- Hashes should be computed over encrypted files for tamper detection.
+- Envelope keys must not be released only because a frontend page asks for them.
+- Key release requires backend identity, tender assignment, tender stage, envelope type, and integrity checks.
+- Premature financial envelope access must return a blocked response and create audit evidence.
+- Public audit APIs must never return encrypted keys, plaintext files, raw Employment IDs, or confidential proposal content.
+
+For the MVP, key management can be local and demonstrative. It must be documented as an MVP KMS, not a production HSM.
+
 ## Environment And Secret Handling
 
 Do not commit real secrets.
@@ -178,7 +223,9 @@ This MVP:
 - Uses mock NDI for reliability.
 - Demonstrates local/mock/Sepolia-capable relayer architecture.
 - Does not replace Bhutan e-GP.
-- Does not prove production privacy for public IPFS.
+- Uses simulated old e-GP integration until official e-GP APIs are available.
+- Can demonstrate real MVP encryption, but does not provide production-grade KMS/HSM controls.
+- Does not prove production privacy for public IPFS or object storage.
 - Is not production-certified government infrastructure.
 
 ## Security Checklist Before Demo
@@ -193,3 +240,13 @@ This MVP:
 - No raw Employment ID appears in blockchain payloads.
 - Private keys are absent from committed files.
 - Demo reset works against a reachable database.
+
+## Updated Security Checklist Before Demo
+
+- Tender manifest hash is immutable after publication.
+- Proposal package is stored only as encrypted envelopes.
+- Financial envelope access before the financial stage is blocked and logged.
+- Key release creates audit evidence.
+- Threshold publication approval prevents single-person publication.
+- Threshold award approval prevents single-person final award.
+- Public audit portal does not expose confidential proposal contents.

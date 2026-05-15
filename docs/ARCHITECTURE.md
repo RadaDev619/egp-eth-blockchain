@@ -4,6 +4,23 @@
 
 The e-GP Trust Layer is a middleware trust and audit layer for procurement integrity. It does not replace Bhutan e-GP. It records role-verified procurement actions as backend-relayed Ethereum audit proofs.
 
+## Updated Secure Gateway Target
+
+The next MVP iteration expands the current audit workflow into a secure procurement gateway for an existing or simulated e-GP system.
+
+```text
+Existing e-GP or simulator
+-> Secure Procurement Gateway
+-> Policy Engine + Encryption + Key Management
+-> Backend Gas Relayer
+-> Ethereum Proof Contracts
+-> Auditor and Public Proof Portals
+```
+
+The existing e-GP system keeps the operational workflow and encrypted file references. The trust layer controls identity-based policy, tender manifest commitments, encrypted proposal envelopes, selective decryption, threshold approvals, and immutable proof submission.
+
+The current implementation remains the baseline. The updated target is documented in [UPDATED_MVP_ROADMAP.md](UPDATED_MVP_ROADMAP.md).
+
 ## System Shape
 
 ```text
@@ -39,6 +56,15 @@ Responsibilities:
 - Document verification UI.
 - Clear blocked-action messages.
 
+Updated target responsibilities:
+
+- Tender manifest workflow.
+- Vendor proposal envelope wizard.
+- Committee evaluation panel.
+- Key release request and selective decryption views.
+- Award threshold approval panel.
+- Privacy-safe public audit portal.
+
 The frontend gets the current user and permissions from backend session APIs. Hidden or disabled UI controls are only a usability layer; backend enforcement remains authoritative.
 
 ### Backend
@@ -67,6 +93,15 @@ Responsibilities:
 - IPFS/mock storage integration.
 - Fixed-method gasless relayer.
 
+Updated target responsibilities:
+
+- Secure Procurement Gateway as the main old-system bridge.
+- Tender-specific role and policy engine.
+- AES-GCM proposal envelope handling.
+- MVP Key Management Service for controlled key release.
+- Threshold publication and award approval.
+- Existing e-GP simulator adapter.
+
 ### Database
 
 Prisma models include:
@@ -83,6 +118,8 @@ Prisma models include:
 - `AuditLog`
 - `BlockchainTransaction`
 - `NDIProofRequest`
+
+Updated target models will add stakeholder assignments, tender manifests, proposal packages, proposal envelopes, encrypted file references, key release policies and requests, conflict declarations, evaluation reports, award recommendations, award approvals, and public audit proofs.
 
 Audit logs are append-only by application design. Tender amendments create `TenderVersion` rows instead of overwriting old versions.
 
@@ -102,6 +139,8 @@ Contracts:
 - `TenderRegistry.sol`: records tender, version, and bid proof events.
 - `ApprovalManager.sol`: records evaluation/payment approval and enforces payment after evaluation.
 - `AuditLog.sol`: emits procurement audit and tampering events.
+
+Updated target contracts will add relayer-only proof events for tender manifests, proposal envelope commitments, tender close, key release logs, evaluation report commitments, award recommendations, award approvals, and contract hash commitments.
 
 Contracts treat `msg.sender` as the backend relayer, not the real procurement actor. The actor is passed as metadata: `actorEmployeeHash` and `actorRole`.
 
@@ -241,3 +280,22 @@ Health:
 - No editable audit history.
 - No arbitrary relayer calls.
 - No digital asset, governance, or finance module scope.
+
+## Updated MVP Boundary
+
+Real in the updated MVP:
+
+- Backend policy enforcement.
+- Tender-specific role assignment.
+- Proposal envelope encryption for demo files.
+- Server-side and encrypted-file hash commitments.
+- Threshold approval logic.
+- Append-only audit records.
+- Relayer-only blockchain proof writes.
+
+Mock or simulated in the updated MVP:
+
+- Bhutan NDI production integration.
+- Existing Bhutan e-GP API integration.
+- Production-grade KMS/HSM.
+- Production privacy controls for public storage.

@@ -4,6 +4,23 @@
 
 The e-GP Trust Layer does not replace Bhutan e-GP. It adds a blockchain-backed trust and audit middleware layer that uses mock Bhutan NDI employment identity, backend RBAC, procurement state-machine enforcement, gasless Ethereum relayer proofs, and immutable audit logs to prevent hidden procurement manipulation.
 
+## Current Baseline vs Updated Target
+
+The current working baseline demonstrates role-based tender creation, bid submission, approval blocking, relayer proof hashes, audit logs, and document tampering detection.
+
+The updated secure-gateway MVP will add:
+
+- Tender manifest commitments.
+- Threshold tender publication approval.
+- Structured vendor proposal envelopes.
+- Proposal encryption before old-system storage.
+- Selective key release by tender stage.
+- Committee conflict declaration and evaluation report proof.
+- Threshold award approval.
+- Privacy-safe public audit portal.
+
+Until those phases are implemented, use the current golden demo below as the stable fallback.
+
 ## Recommended Demo Mode
 
 Use mock mode for judging reliability:
@@ -232,6 +249,24 @@ Show:
 - Verification failed result.
 - `TAMPERING DETECTED` alert.
 - Tampering audit event.
+
+## Updated Target Demo Flow
+
+The next demo flow will replace the simple bid and payment path with a confidentiality and proof trail path:
+
+1. Procurement Officer creates a tender manifest containing documents, rules, dates, evaluation criteria, and approval policy.
+2. Publication requires threshold approval from authorized officers.
+3. Vendor submits a structured encrypted proposal package with eligibility, technical, financial, supporting, and tender security envelopes.
+4. Existing e-GP simulator stores only encrypted file references and Ethereum tx references.
+5. Tender closes and the close event is recorded.
+6. TEC member signs conflict-of-interest declaration.
+7. TEC member can decrypt only the technical envelope during technical evaluation.
+8. Premature financial envelope access is blocked and logged.
+9. Technical evaluation report hash is committed.
+10. Financial role can decrypt the financial envelope only after technical completion.
+11. TEC Chair submits winner recommendation hash.
+12. Award approval requires threshold approval.
+13. Public audit portal shows hashes, statuses, timestamps, roles, and tx hashes without exposing confidential proposal contents.
 
 ## Five-Minute Pitch Script
 
