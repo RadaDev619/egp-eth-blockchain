@@ -20,6 +20,7 @@ export const permissions = {
   VIEW_ROLE_ACTION_HISTORY: "VIEW_ROLE_ACTION_HISTORY",
   COMPLETE_PROCUREMENT: "COMPLETE_PROCUREMENT",
   CANCEL_TENDER: "CANCEL_TENDER",
+  MANAGE_TENDER_ASSIGNMENTS: "MANAGE_TENDER_ASSIGNMENTS",
   CREATE_TENDER_MANIFEST: "CREATE_TENDER_MANIFEST",
   REQUEST_PUBLICATION_APPROVAL: "REQUEST_PUBLICATION_APPROVAL",
   APPROVE_TENDER_PUBLICATION: "APPROVE_TENDER_PUBLICATION",
@@ -44,9 +45,11 @@ export const rolePermissions: Record<Role, Permission[]> = {
     permissions.CREATE_TENDER,
     permissions.CREATE_TENDER_MANIFEST,
     permissions.REQUEST_PUBLICATION_APPROVAL,
+    permissions.VIEW_ASSIGNED_TENDERS,
     permissions.UPLOAD_TENDER_DOCUMENT,
     permissions.CREATE_TENDER_VERSION,
     permissions.SUBMIT_TENDER_AMENDMENT,
+    permissions.MANAGE_TENDER_ASSIGNMENTS,
     permissions.CLOSE_TENDER,
     permissions.COMMIT_CONTRACT_HASH,
     permissions.CANCEL_TENDER
@@ -70,6 +73,7 @@ export const rolePermissions: Record<Role, Permission[]> = {
   ],
   AUDITOR: [
     permissions.VIEW_AUDIT_LOGS,
+    permissions.VIEW_ASSIGNED_TENDERS,
     permissions.VERIFY_PROCUREMENT_HISTORY,
     permissions.VERIFY_DOCUMENT,
     permissions.VIEW_BLOCKCHAIN_PROOFS,
@@ -96,6 +100,7 @@ export const rolePermissions: Record<Role, Permission[]> = {
     permissions.APPROVE_TENDER_PUBLICATION,
     permissions.APPROVE_AWARD,
     permissions.COMMIT_CONTRACT_HASH,
+    permissions.VIEW_ASSIGNED_TENDERS,
     permissions.VIEW_BLOCKCHAIN_PROOFS
   ],
   FINANCIAL_INSTITUTION_OFFICER: [

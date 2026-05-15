@@ -291,6 +291,7 @@ async function main() {
   const assignmentSeeds = [
     { stakeholderKey: "procurementOfficer", role: "PROCUREMENT_OFFICER" },
     { stakeholderKey: "vendor", role: "VENDOR" },
+    { stakeholderKey: "tecMember", role: "EVALUATOR" },
     { stakeholderKey: "tecMember", role: "TEC_MEMBER" },
     { stakeholderKey: "tecChair", role: "TEC_CHAIR" },
     { stakeholderKey: "approvingOfficer", role: "APPROVING_OFFICER" },
