@@ -4,6 +4,10 @@ import type {
   AuditLogsResponse,
   AuditTransactionProofResponse,
   DocumentVerificationResponse,
+  PublicAuditFilters,
+  PublicAuditOverviewResponse,
+  PublicTenderAuditResponse,
+  PublicTransactionAuditResponse,
   TenderAuditTimelineResponse,
   VerifyDocumentInput
 } from "@/types/audit";
@@ -130,7 +134,7 @@ function createTenderFormData(input: CreateTenderInput) {
   return formData;
 }
 
-function auditQueryString(filters: AuditLogFilters = {}) {
+function auditQueryString(filters: Record<string, string | undefined> = {}) {
   const params = new URLSearchParams();
 
   Object.entries(filters).forEach(([key, value]) => {
@@ -223,6 +227,12 @@ export const auditApi = {
   listLogs: (filters?: AuditLogFilters) => request<AuditLogsResponse>(`/audit/logs${auditQueryString(filters)}`),
   getTenderTimeline: (tenderId: string) => request<TenderAuditTimelineResponse>(`/audit/tender/${encodeURIComponent(tenderId)}/timeline`),
   getTxProof: (txHash: string) => request<AuditTransactionProofResponse>(`/audit/tx/${encodeURIComponent(txHash)}`)
+};
+
+export const publicAuditApi = {
+  list: (filters?: PublicAuditFilters) => request<PublicAuditOverviewResponse>(`/public/audit${auditQueryString(filters)}`),
+  getTender: (tenderId: string) => request<PublicTenderAuditResponse>(`/public/audit/tenders/${encodeURIComponent(tenderId)}`),
+  getTx: (txHash: string) => request<PublicTransactionAuditResponse>(`/public/audit/tx/${encodeURIComponent(txHash)}`)
 };
 
 export const verificationApi = {

@@ -115,3 +115,83 @@ export type VerifyDocumentInput = {
   tenderVersionId?: string;
   document: File;
 };
+
+export type PublicAuditProofType =
+  | "TENDER_MANIFEST"
+  | "PROPOSAL_PACKAGE"
+  | "ENVELOPE_COMMITMENT"
+  | "KEY_RELEASE"
+  | "EVALUATION_REPORT"
+  | "AWARD_RECOMMENDATION"
+  | "AWARD_APPROVAL"
+  | "CONTRACT_HASH"
+  | "TAMPERING_DETECTED";
+
+export type PublicTenderSummary = {
+  id: string;
+  tenderCode: string;
+  agency: string;
+  currentState: TenderState;
+  createdAt: string;
+  updatedAt: string;
+  proofCount?: number;
+};
+
+export type PublicAuditProof = {
+  id: string;
+  tenderId: string;
+  tender?: PublicTenderSummary | null;
+  proofType: PublicAuditProofType;
+  proofHash: string;
+  sourceTxHash?: string | null;
+  blockchainStatus?: BlockchainStatus | null;
+  publicLabel: string;
+  createdAt: string;
+};
+
+export type PublicAuditEvent = {
+  id: string;
+  source: "PUBLIC_PROOF" | "AUDIT_LOG";
+  tenderId?: string | null;
+  action: string;
+  status: AuditStatus;
+  actorRole?: Role | null;
+  fromState?: TenderState | string | null;
+  toState?: TenderState | string | null;
+  rejectionReason?: string | null;
+  documentHash?: string | null;
+  metadataHash?: string | null;
+  txHash?: string | null;
+  blockchainStatus?: BlockchainStatus | null;
+  blockNumber?: number | null;
+  chainId?: number | null;
+  publicLabel?: string | null;
+  timestamp: string;
+  createdAt: string;
+};
+
+export type PublicAuditOverviewResponse = {
+  tenders: PublicTenderSummary[];
+  proofs: PublicAuditProof[];
+  timeline: PublicAuditEvent[];
+};
+
+export type PublicTenderAuditResponse = {
+  tender: PublicTenderSummary;
+  proofs: PublicAuditProof[];
+  blockchainTransactions: BlockchainTransaction[];
+  timeline: PublicAuditEvent[];
+};
+
+export type PublicTransactionAuditResponse = {
+  txHash: string;
+  blockchainTransaction?: BlockchainTransaction | null;
+  proofs: PublicAuditProof[];
+  timeline: PublicAuditEvent[];
+};
+
+export type PublicAuditFilters = {
+  tenderId?: string;
+  proofType?: PublicAuditProofType;
+  txHash?: string;
+};

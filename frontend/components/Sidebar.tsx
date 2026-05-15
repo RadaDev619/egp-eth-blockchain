@@ -10,6 +10,7 @@ import {
   Gavel,
   Landmark,
   LayoutDashboard,
+  SearchCheck,
   ScrollText,
   ShieldCheck
 } from "lucide-react";
@@ -27,7 +28,8 @@ const navItems: Array<{
   { href: "/approvals", label: "Approvals", icon: Gavel, permissions: ["APPROVE_EVALUATION", "APPROVE_PAYMENT"] },
   { href: "/audit", label: "Audit Logs", icon: ScrollText, permissions: ["VIEW_AUDIT_LOGS"] },
   { href: "/verify", label: "Integrity Verification", icon: ShieldCheck, permissions: ["VERIFY_DOCUMENT"] },
-  { href: "/proofs", label: "Blockchain Proofs", icon: BarChart3, permissions: ["VIEW_BLOCKCHAIN_PROOFS"] }
+  { href: "/proofs", label: "Blockchain Proofs", icon: BarChart3, permissions: ["VIEW_BLOCKCHAIN_PROOFS"] },
+  { href: "/public-audit", label: "Public Proof Trail", icon: SearchCheck }
 ];
 
 function canAccess(user: AuthenticatedUser | null, permissions?: Permission[]) {
