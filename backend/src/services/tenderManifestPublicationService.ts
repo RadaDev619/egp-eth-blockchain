@@ -1,4 +1,4 @@
-import type { BlockchainStatus, Prisma, Role, TenderState } from "@prisma/client";
+import type { BlockchainStatus, Prisma, TenderState } from "@prisma/client";
 import { appendAuditEvent, actorAuditFields } from "./auditService.js";
 import { assertSecureGatewayAction, SecureGatewayAction } from "./secureProcurementGateway.js";
 import { assertPermission } from "./rbacService.js";

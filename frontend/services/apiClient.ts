@@ -8,6 +8,7 @@ import type {
   VerifyDocumentInput
 } from "@/types/audit";
 import type { ApprovalInput, CreateTenderInput, SubmitBidInput, Tender } from "@/types/procurement";
+import type { UploadEncryptedEnvelopeInput } from "@/types/proposal";
 
 const CONFIGURED_API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:4000";
 const TOKEN_KEY = "egp_trust_layer_session";
@@ -158,6 +159,35 @@ function verificationFormData(input: VerifyDocumentInput) {
   return formData;
 }
 
+function encryptedEnvelopeFormData(input: UploadEncryptedEnvelopeInput) {
+  const formData = new FormData();
+  formData.append("envelopeType", input.envelopeType);
+  formData.append("envelopeManifestHash", input.envelopeManifestHash);
+  formData.append("encryptedFile", input.encryptedFile);
+
+  if (input.keyId) {
+    formData.append("keyId", input.keyId);
+  }
+
+  if (input.encryptionAlgorithm) {
+    formData.append("encryptionAlgorithm", input.encryptionAlgorithm);
+  }
+
+  if (input.iv) {
+    formData.append("iv", input.iv);
+  }
+
+  if (input.authTag) {
+    formData.append("authTag", input.authTag);
+  }
+
+  if (input.ipfsCid) {
+    formData.append("ipfsCid", input.ipfsCid);
+  }
+
+  return formData;
+}
+
 export const tenderApi = {
   list: () => request<{ tenders: Tender[] }>("/tenders"),
   get: (id: string) => request<{ tender: Tender }>(`/tenders/${id}`),
@@ -200,5 +230,13 @@ export const verificationApi = {
     request<DocumentVerificationResponse>("/verify/document", {
       method: "POST",
       body: verificationFormData(input)
+    })
+};
+
+export const proposalApi = {
+  uploadEncryptedEnvelope: (input: UploadEncryptedEnvelopeInput) =>
+    request<{ envelope: unknown }>(`/gateway/proposals/${encodeURIComponent(input.proposalPackageId)}/envelopes/upload`, {
+      method: "POST",
+      body: encryptedEnvelopeFormData(input)
     })
 };

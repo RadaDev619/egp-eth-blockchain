@@ -5,6 +5,7 @@ import type { AuthenticatedUser } from "../types/domain.js";
 import { permissions } from "../types/domain.js";
 import { AuthorizationError, NotFoundError, ValidationError } from "../utils/errors.js";
 import { canonicalJson, sha256Hex } from "../utils/hash.js";
+import type { HashedEncryptedProposalFile } from "../utils/encryptedProposalFile.js";
 import { sanitizeFilename } from "../utils/hashDocument.js";
 import { prisma } from "../utils/prisma.js";
 
@@ -42,6 +43,18 @@ export type SubmitProposalPackageInput = {
 
 export type CommitProposalEnvelopeInput = ProposalEnvelopeInput & {
   proposalPackageId: string;
+};
+
+export type UploadEncryptedProposalEnvelopeInput = {
+  proposalPackageId: string;
+  envelopeType: ProposalEnvelopeType;
+  envelopeManifestHash: string;
+  encryptedFile: HashedEncryptedProposalFile;
+  keyId?: string | null;
+  iv?: string | null;
+  authTag?: string | null;
+  encryptionAlgorithm?: string | null;
+  ipfsCid?: string | null;
 };
 
 const hashPattern = /^0x[a-fA-F0-9]{64}$/;
@@ -627,6 +640,35 @@ export async function commitProposalEnvelope(
 
     return envelope;
   });
+}
+
+export async function uploadEncryptedProposalEnvelope(
+  input: UploadEncryptedProposalEnvelopeInput,
+  user: AuthenticatedUser,
+  context: RequestContext = {}
+) {
+  assertHash("envelopeManifestHash", input.envelopeManifestHash);
+
+  return commitProposalEnvelope(
+    {
+      proposalPackageId: input.proposalPackageId,
+      envelopeType: input.envelopeType,
+      encryptedFileHash: input.encryptedFile.encryptedFileHash,
+      envelopeManifestHash: input.envelopeManifestHash,
+      storageReference: `mock-storage/proposals/${input.proposalPackageId}/${input.envelopeType.toLowerCase()}/${input.encryptedFile.encryptedFileHash.slice(2)}.enc`,
+      storageProvider: "mock-browser-encrypted",
+      contentType: input.encryptedFile.mimeType,
+      byteSize: input.encryptedFile.byteLength,
+      originalFilename: input.encryptedFile.sanitizedFilename,
+      encryptionAlgorithm: input.encryptionAlgorithm ?? "AES-GCM",
+      keyId: input.keyId ?? null,
+      iv: input.iv ?? null,
+      authTag: input.authTag ?? null,
+      ipfsCid: input.ipfsCid ?? null
+    },
+    user,
+    context
+  );
 }
 
 export async function listProposalPackages(tenderId: string, user: AuthenticatedUser) {

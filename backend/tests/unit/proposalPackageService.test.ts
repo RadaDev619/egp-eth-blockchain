@@ -229,7 +229,7 @@ vi.mock("../../src/utils/prisma.js", () => {
   return { prisma };
 });
 
-const { submitProposalPackage } = await import("../../src/services/proposalPackageService.js");
+const { submitProposalPackage, uploadEncryptedProposalEnvelope } = await import("../../src/services/proposalPackageService.js");
 
 const vendor: AuthenticatedUser = {
   userId: "vendor-user",
@@ -419,5 +419,46 @@ describe("proposalPackageService", () => {
     expect(db.proposalPackages).toHaveLength(0);
     expect(db.envelopes).toHaveLength(0);
     expect(db.fileReferences).toHaveLength(0);
+  });
+
+  it("commits an uploaded encrypted envelope using the server-computed encrypted file hash", async () => {
+    db.proposalPackages.push({
+      id: "proposal-1",
+      tenderId: "tender-1",
+      vendorEmployeeHash: "0xvendor",
+      packageHash: hashes.packageHash,
+      status: "SUBMITTED"
+    });
+
+    const envelope = await uploadEncryptedProposalEnvelope(
+      {
+        proposalPackageId: "proposal-1",
+        envelopeType: "TECHNICAL",
+        envelopeManifestHash: hashes.manifest,
+        encryptedFile: {
+          encryptedFileHash: hashes.encrypted,
+          sanitizedFilename: "technical.pdf.enc",
+          byteLength: 2048,
+          mimeType: "application/octet-stream"
+        },
+        iv: "mock-iv",
+        authTag: "mock-auth-tag"
+      },
+      vendor
+    );
+
+    expect(envelope).toMatchObject({
+      proposalPackageId: "proposal-1",
+      envelopeType: "TECHNICAL",
+      encryptedFileHash: hashes.encrypted,
+      envelopeManifestHash: hashes.manifest
+    });
+    expect(db.fileReferences.at(-1)).toMatchObject({
+      proposalEnvelopeId: envelope.id,
+      encryptedFileHash: hashes.encrypted,
+      originalFilename: "technical.pdf.enc",
+      byteSize: 2048
+    });
+    expect(JSON.stringify(db.fileReferences.at(-1))).not.toContain("financial proposal amount");
   });
 });

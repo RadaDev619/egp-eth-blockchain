@@ -5,10 +5,12 @@ import {
   commitProposalEnvelope,
   getProposalPackage,
   listProposalPackages,
-  submitProposalPackage
+  submitProposalPackage,
+  uploadEncryptedProposalEnvelope
 } from "../services/proposalPackageService.js";
 import { asyncHandler } from "../utils/asyncHandler.js";
 import { ValidationError } from "../utils/errors.js";
+import { validateAndHashEncryptedProposalFile } from "../utils/encryptedProposalFile.js";
 
 const hashSchema = z.string().regex(/^0x[a-fA-F0-9]{64}$/);
 const envelopeTypeSchema = z.enum(["ELIGIBILITY", "TECHNICAL", "FINANCIAL", "SUPPORTING_DOCUMENTS", "TENDER_SECURITY"]);
@@ -34,6 +36,16 @@ const submitProposalSchema = z.object({
   packageHash: hashSchema,
   envelopes: z.array(envelopeSchema).min(5),
   metadata: z.record(z.unknown()).optional()
+});
+
+const encryptedUploadSchema = z.object({
+  envelopeType: envelopeTypeSchema,
+  envelopeManifestHash: hashSchema,
+  keyId: z.string().min(1).optional(),
+  encryptionAlgorithm: z.string().min(1).optional(),
+  iv: z.string().min(1).optional(),
+  authTag: z.string().min(1).optional(),
+  ipfsCid: z.string().min(1).optional()
 });
 
 function requireUser(req: Request) {
@@ -102,4 +114,27 @@ export const commitProposalEnvelopeController = asyncHandler(async (req: Request
   );
 
   res.json({ envelope });
+});
+
+export const uploadEncryptedProposalEnvelopeController = asyncHandler(async (req: Request, res: Response) => {
+  const proposalPackageId = z.string().min(1).parse(req.params.proposalPackageId);
+  const payload = encryptedUploadSchema.parse(req.body);
+  const encryptedFile = validateAndHashEncryptedProposalFile(req.file);
+  const envelope = await uploadEncryptedProposalEnvelope(
+    {
+      proposalPackageId,
+      envelopeType: payload.envelopeType as ProposalEnvelopeType,
+      envelopeManifestHash: payload.envelopeManifestHash,
+      encryptedFile,
+      keyId: payload.keyId,
+      encryptionAlgorithm: payload.encryptionAlgorithm,
+      iv: payload.iv,
+      authTag: payload.authTag,
+      ipfsCid: payload.ipfsCid
+    },
+    requireUser(req),
+    requestContext(req)
+  );
+
+  res.status(201).json({ envelope });
 });
