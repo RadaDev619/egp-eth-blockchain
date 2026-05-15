@@ -1,6 +1,7 @@
 import { Router } from "express";
 import { auditRoutes } from "./auditRoutes.js";
 import { authRoutes } from "./authRoutes.js";
+import { evaluationCommitteeRoutes } from "./evaluationCommitteeRoutes.js";
 import { keyManagementRoutes } from "./keyManagementRoutes.js";
 import { procurementRoutes } from "./procurementRoutes.js";
 import { proposalPackageRoutes } from "./proposalPackageRoutes.js";
@@ -25,4 +26,5 @@ routes.use(secureGatewayRoutes);
 routes.use(tenderManifestRoutes);
 routes.use(proposalPackageRoutes);
 routes.use(keyManagementRoutes);
+routes.use(evaluationCommitteeRoutes);
 routes.use(auditRoutes);
