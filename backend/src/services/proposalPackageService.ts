@@ -286,7 +286,10 @@ async function findProposalPackageOrThrow(proposalPackageId: string) {
       envelopes: {
         orderBy: { envelopeType: "asc" },
         include: {
-          fileReferences: true
+          fileReferences: true,
+          keyReleaseRequests: {
+            orderBy: { createdAt: "desc" }
+          }
         }
       },
       vendorStakeholder: true
@@ -352,6 +355,10 @@ async function canViewProposalMetadata(tenderId: string, user: AuthenticatedUser
   });
 
   return Boolean(assignment);
+}
+
+function keyReleaseRequestVisibility(user: AuthenticatedUser) {
+  return user.permissions.includes(permissions.RELEASE_ENVELOPE_KEY) ? {} : { requesterEmployeeHash: user.employeeHash };
 }
 
 async function upsertEnvelope(
@@ -753,7 +760,11 @@ export async function listProposalPackages(tenderId: string, user: Authenticated
         where: { envelopeType: { in: envelopeTypes } },
         orderBy: { envelopeType: "asc" },
         include: {
-          fileReferences: true
+          fileReferences: true,
+          keyReleaseRequests: {
+            where: keyReleaseRequestVisibility(user),
+            orderBy: { createdAt: "desc" }
+          }
         }
       },
       vendorStakeholder: true
@@ -781,6 +792,14 @@ export async function getProposalPackage(proposalPackageId: string, user: Authen
 
   return {
     ...proposalPackage,
-    envelopes: proposalPackage.envelopes.filter((envelope) => envelopeTypes.includes(envelope.envelopeType))
+    envelopes: proposalPackage.envelopes
+      .filter((envelope) => envelopeTypes.includes(envelope.envelopeType))
+      .map((envelope) => ({
+        ...envelope,
+        keyReleaseRequests: (envelope.keyReleaseRequests ?? []).filter(
+          (request) =>
+            user.permissions.includes(permissions.RELEASE_ENVELOPE_KEY) || request.requesterEmployeeHash === user.employeeHash
+        )
+      }))
   };
 }

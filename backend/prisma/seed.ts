@@ -644,6 +644,16 @@ async function main() {
       requiredTenderState: "TECHNICAL_EVALUATION"
     },
     {
+      envelopeType: "SUPPORTING_DOCUMENTS",
+      allowedRole: "TEC_MEMBER",
+      requiredTenderState: "TECHNICAL_EVALUATION"
+    },
+    {
+      envelopeType: "SUPPORTING_DOCUMENTS",
+      allowedRole: "TEC_CHAIR",
+      requiredTenderState: "TECHNICAL_EVALUATION"
+    },
+    {
       envelopeType: "FINANCIAL",
       allowedRole: "FINANCIAL_INSTITUTION_OFFICER",
       requiredTenderState: "FINANCIAL_EVALUATION"
@@ -707,10 +717,10 @@ async function main() {
       requesterEmployeeHash: createEmployeeHash("TEC-001"),
       requesterRole: "TEC_MEMBER",
       requestedTenderState: "TECHNICAL_EVALUATION",
-      status: "APPROVED",
+      status: "REQUESTED",
       rejectionReason: null,
-      keyMaterialReference: "kms://mock/releases/technical-envelope-tec-member-demo",
-      releasedAt: new Date()
+      keyMaterialReference: null,
+      releasedAt: null
     },
     create: {
       id: "key-release-request-demo-technical",
@@ -721,9 +731,9 @@ async function main() {
       requesterEmployeeHash: createEmployeeHash("TEC-001"),
       requesterRole: "TEC_MEMBER",
       requestedTenderState: "TECHNICAL_EVALUATION",
-      status: "APPROVED",
-      keyMaterialReference: "kms://mock/releases/technical-envelope-tec-member-demo",
-      releasedAt: new Date()
+      status: "REQUESTED",
+      keyMaterialReference: null,
+      releasedAt: null
     }
   });
 

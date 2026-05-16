@@ -60,7 +60,7 @@ Expected deterministic secure-gateway seed:
 - Tender manifest and publication approval proofs
 - Five encrypted proposal envelopes
 - Old e-GP simulator records showing encrypted references only
-- Approved technical key release for `TEC-001`
+- Pending technical key release request for `TEC-001` so `TEC-CHAIR-001` can release it during the demo
 - Premature financial access remains blocked until evaluation finalization
 - Award recommendation and one approval preloaded so `APP-002` can meet threshold quickly
 - Public audit proofs with no raw Employment ID or proposal content

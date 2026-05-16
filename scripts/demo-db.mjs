@@ -1,10 +1,14 @@
 import { spawnSync } from "node:child_process";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { config as loadDotenv } from "dotenv";
 
 const rootDir = resolve(dirname(fileURLToPath(import.meta.url)), "..");
 const backendDir = resolve(rootDir, "backend");
 const mode = process.argv[2];
+const env = { ...process.env };
+
+loadDotenv({ path: resolve(backendDir, ".env"), processEnv: env });
 
 const defaultEnv = {
   DATABASE_URL: "postgresql://egp:egp@localhost:5432/egp_trust?schema=public",
@@ -14,8 +18,6 @@ const defaultEnv = {
   BLOCKCHAIN_MODE: "mock",
   IPFS_MODE: "mock"
 };
-
-const env = { ...process.env };
 
 for (const [key, value] of Object.entries(defaultEnv)) {
   if (!env[key]) {

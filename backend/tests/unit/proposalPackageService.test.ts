@@ -19,6 +19,7 @@ const db = vi.hoisted(() => ({
   blockchainTransactions: [] as Array<Record<string, unknown>>,
   auditLogs: [] as Array<Record<string, unknown>>,
   publicAuditProofs: [] as Array<Record<string, unknown>>,
+  keyReleaseRequests: [] as Array<Record<string, unknown>>,
   reset() {
     this.proposalSeq = 0;
     this.envelopeSeq = 0;
@@ -35,6 +36,7 @@ const db = vi.hoisted(() => ({
     this.blockchainTransactions.length = 0;
     this.auditLogs.length = 0;
     this.publicAuditProofs.length = 0;
+    this.keyReleaseRequests.length = 0;
   }
 }));
 
@@ -123,7 +125,8 @@ vi.mock("../../src/utils/prisma.js", () => {
             .filter((envelope) => envelope.proposalPackageId === proposalPackage.id)
             .map((envelope) => ({
               ...envelope,
-              fileReferences: db.fileReferences.filter((file) => file.proposalEnvelopeId === envelope.id)
+              fileReferences: db.fileReferences.filter((file) => file.proposalEnvelopeId === envelope.id),
+              keyReleaseRequests: db.keyReleaseRequests.filter((request) => request.proposalEnvelopeId === envelope.id)
             }))
         };
       }),
@@ -141,7 +144,15 @@ vi.mock("../../src/utils/prisma.js", () => {
                 envelope.proposalPackageId === proposalPackage.id &&
                 (!include?.envelopes?.where?.envelopeType?.in ||
                   include.envelopes.where.envelopeType.in.includes(envelope.envelopeType))
-            ),
+            ).map((envelope) => ({
+              ...envelope,
+              keyReleaseRequests: db.keyReleaseRequests.filter(
+                (request) =>
+                  request.proposalEnvelopeId === envelope.id &&
+                  (!include?.envelopes?.include?.keyReleaseRequests?.where?.requesterEmployeeHash ||
+                    request.requesterEmployeeHash === include.envelopes.include.keyReleaseRequests.where.requesterEmployeeHash)
+              )
+            })),
             vendorStakeholder: db.stakeholders.find((stakeholder) => stakeholder.id === proposalPackage.vendorStakeholderId)
           }))
       )
@@ -534,6 +545,14 @@ describe("proposalPackageService", () => {
     await seedSubmittedPackage();
     Object.assign(db.tenders[0], { currentState: "TECHNICAL_EVALUATION" });
     seedAssignment(tecMember);
+    db.keyReleaseRequests.push({
+      id: "key-request-technical",
+      proposalEnvelopeId: "envelope-2",
+      requesterEmployeeHash: tecMember.employeeHash,
+      requesterRole: "TEC_MEMBER",
+      requestedTenderState: "TECHNICAL_EVALUATION",
+      status: "REQUESTED"
+    });
 
     const packages = await listProposalPackages("tender-1", tecMember);
 
@@ -543,6 +562,11 @@ describe("proposalPackageService", () => {
       "SUPPORTING_DOCUMENTS",
       "TECHNICAL"
     ]);
+    expect(
+      packages[0].envelopes.flatMap((envelope: Record<string, unknown>) =>
+        Array.isArray(envelope.keyReleaseRequests) ? envelope.keyReleaseRequests : []
+      )
+    ).toHaveLength(1);
   });
 
   it("does not expose financial envelopes before financial evaluation", async () => {

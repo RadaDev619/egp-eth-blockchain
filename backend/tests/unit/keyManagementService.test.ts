@@ -148,6 +148,17 @@ vi.mock("../../src/utils/prisma.js", () => {
         db.requests.push(request);
         return request;
       }),
+      findFirst: vi.fn(async ({ where }) => {
+        const request = db.requests.find(
+          (candidate) =>
+            candidate.tenderId === where.tenderId &&
+            candidate.proposalEnvelopeId === where.proposalEnvelopeId &&
+            candidate.requesterEmployeeHash === where.requesterEmployeeHash &&
+            (!where.status?.in || where.status.in.includes(candidate.status))
+        );
+
+        return request ?? null;
+      }),
       findUnique: vi.fn(async ({ where }) => {
         const request = db.requests.find((candidate) => candidate.id === where.id);
 

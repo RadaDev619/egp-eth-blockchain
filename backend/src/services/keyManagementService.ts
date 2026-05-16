@@ -288,6 +288,24 @@ export async function requestEnvelopeKeyRelease(
     });
   }
 
+  const existingRequest = await prisma.keyReleaseRequest.findFirst({
+    where: {
+      tenderId: tender.id,
+      proposalEnvelopeId: envelope.id,
+      requesterEmployeeHash: user.employeeHash,
+      status: { in: ["REQUESTED", "APPROVED"] }
+    },
+    orderBy: { createdAt: "desc" }
+  });
+
+  if (existingRequest) {
+    return {
+      request: existingRequest,
+      policy,
+      keyMaterialReference: existingRequest.keyMaterialReference
+    };
+  }
+
   return prisma.$transaction(async (tx) => {
     const request = await tx.keyReleaseRequest.create({
       data: {
