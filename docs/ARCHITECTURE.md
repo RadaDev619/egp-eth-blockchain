@@ -4,9 +4,9 @@
 
 The e-GP Trust Layer is a middleware trust and audit layer for procurement integrity. It does not replace Bhutan e-GP. It records role-verified procurement actions as backend-relayed Ethereum audit proofs.
 
-## Updated Secure Gateway Target
+## Updated Secure Gateway MVP
 
-The next MVP iteration expands the current audit workflow into a secure procurement gateway for an existing or simulated e-GP system.
+The updated MVP expands the original audit workflow into a secure procurement gateway for an existing or simulated e-GP system.
 
 ```text
 Existing e-GP or simulator
@@ -19,7 +19,7 @@ Existing e-GP or simulator
 
 The existing e-GP system keeps the operational workflow and encrypted file references. The trust layer controls identity-based policy, tender manifest commitments, encrypted proposal envelopes, selective decryption, threshold approvals, and immutable proof submission.
 
-The current implementation remains the baseline. The updated target is documented in [UPDATED_MVP_ROADMAP.md](UPDATED_MVP_ROADMAP.md).
+The implementation follows the updated target documented in [UPDATED_MVP_ROADMAP.md](UPDATED_MVP_ROADMAP.md), with mock NDI and simulated old e-GP integration retained for hackathon reliability.
 
 ## System Shape
 
@@ -56,7 +56,7 @@ Responsibilities:
 - Document verification UI.
 - Clear blocked-action messages.
 
-Updated target responsibilities:
+Secure-gateway responsibilities:
 
 - Tender manifest workflow.
 - Vendor proposal envelope wizard.
@@ -93,7 +93,7 @@ Responsibilities:
 - IPFS/mock storage integration.
 - Fixed-method gasless relayer.
 
-Updated target responsibilities:
+Secure-gateway responsibilities:
 
 - Secure Procurement Gateway as the main old-system bridge.
 - Tender-specific role and policy engine.
@@ -119,7 +119,7 @@ Prisma models include:
 - `BlockchainTransaction`
 - `NDIProofRequest`
 
-Updated target models will add stakeholder assignments, tender manifests, proposal packages, proposal envelopes, encrypted file references, key release policies and requests, conflict declarations, evaluation reports, award recommendations, award approvals, and public audit proofs.
+Secure-gateway models include stakeholder assignments, tender manifests, proposal packages, proposal envelopes, encrypted file references, key release policies and requests, conflict declarations, evaluation reports, award recommendations, award approvals, and public audit proofs.
 
 Audit logs are append-only by application design. Tender amendments create `TenderVersion` rows instead of overwriting old versions.
 
@@ -140,7 +140,7 @@ Contracts:
 - `ApprovalManager.sol`: records evaluation/payment approval and enforces payment after evaluation.
 - `AuditLog.sol`: emits procurement audit and tampering events.
 
-Updated target contracts will add relayer-only proof events for tender manifests, proposal envelope commitments, tender close, key release logs, evaluation report commitments, award recommendations, award approvals, and contract hash commitments.
+The updated contract suite includes relayer-only proof events for tender manifests, proposal envelope commitments, key release logs, evaluation report commitments, award recommendations, award approvals, contract hash commitments, and tampering evidence.
 
 Contracts treat `msg.sender` as the backend relayer, not the real procurement actor. The actor is passed as metadata: `actorEmployeeHash` and `actorRole`.
 
@@ -172,6 +172,11 @@ Role mapping is deterministic for the MVP:
 
 - `PROC-001` -> `PROCUREMENT_OFFICER`
 - `VEND-001` -> `VENDOR`
+- `APP-001` -> `APPROVING_OFFICER`
+- `APP-002` -> `APPROVING_OFFICER`
+- `TEC-001` -> `TEC_MEMBER`
+- `TEC-CHAIR-001` -> `TEC_CHAIR`
+- `BANK-001` -> `FINANCIAL_INSTITUTION_OFFICER`
 - `EVAL-001` -> `EVALUATOR`
 - `FIN-001` -> `FINANCE_OFFICER`
 - `AUD-001` -> `AUDITOR`
@@ -253,6 +258,47 @@ Procurement:
 - `POST /approve/payment`
 - `POST /verify/document`
 - `POST /egp/event`
+- `GET /tenders/:tenderId/assignments`
+- `POST /tenders/:tenderId/assignments`
+- `POST /tenders/:tenderId/assignments/:assignmentId/revoke`
+
+Secure gateway:
+
+- `GET /gateway/policies`
+- `GET /gateway/tenders/:tenderId/context`
+- `POST /gateway/tenders/:tenderId/policy-check`
+- `POST /gateway/tenders/manifest`
+- `GET /gateway/tenders/:tenderId/manifest`
+- `POST /gateway/tenders/:tenderId/publication/request`
+- `POST /gateway/tenders/:tenderId/publication/approve`
+- `GET /gateway/tenders/:tenderId/proposals`
+- `POST /gateway/tenders/:tenderId/proposals`
+- `GET /gateway/proposals/:proposalPackageId`
+- `POST /gateway/proposals/:proposalPackageId/envelopes`
+- `POST /gateway/proposals/:proposalPackageId/envelopes/upload`
+- `GET /gateway/legacy-egp/records`
+- `GET /gateway/legacy-egp/records/:id`
+- `POST /gateway/legacy-egp/records`
+- `POST /gateway/proposal-envelopes/:proposalEnvelopeId/key-release/request`
+- `POST /gateway/key-release-requests/:keyReleaseRequestId/release`
+- `GET /gateway/tenders/:tenderId/committee`
+- `POST /gateway/tenders/:tenderId/committee/conflict-declarations`
+- `GET /gateway/tenders/:tenderId/committee/technical-envelopes`
+- `POST /gateway/tenders/:tenderId/committee/evaluation-reports`
+- `POST /gateway/tenders/:tenderId/committee/evaluation-reports/:reportId/finalize`
+- `GET /gateway/tenders/:tenderId/financial-evaluation`
+- `POST /gateway/tenders/:tenderId/financial-evaluation/envelopes/:proposalEnvelopeId/key-release/request`
+- `POST /gateway/tenders/:tenderId/financial-evaluation/key-release-requests/:keyReleaseRequestId/release`
+- `GET /gateway/tenders/:tenderId/award`
+- `POST /gateway/tenders/:tenderId/award/recommendations`
+- `POST /gateway/tenders/:tenderId/award/recommendations/:awardRecommendationId/approvals`
+- `POST /gateway/tenders/:tenderId/award/contract-proofs`
+
+Public audit:
+
+- `GET /public/audit`
+- `GET /public/audit/tenders/:tenderId`
+- `GET /public/audit/tx/:txHash`
 
 Audit:
 
@@ -279,7 +325,7 @@ Health:
 - No raw Employment ID on-chain.
 - No editable audit history.
 - No arbitrary relayer calls.
-- No digital asset, governance, or finance module scope.
+- No digital asset, governance, DeFi, or token module scope.
 
 ## Updated MVP Boundary
 
@@ -287,7 +333,7 @@ Real in the updated MVP:
 
 - Backend policy enforcement.
 - Tender-specific role assignment.
-- Proposal envelope encryption for demo files.
+- WebCrypto AES-GCM proposal envelope encryption for demo files before upload.
 - Server-side and encrypted-file hash commitments.
 - Threshold approval logic.
 - Append-only audit records.
@@ -297,5 +343,5 @@ Mock or simulated in the updated MVP:
 
 - Bhutan NDI production integration.
 - Existing Bhutan e-GP API integration.
-- Production-grade KMS/HSM.
+- Production-grade KMS/HSM; key release is local/MVP KMS logic.
 - Production privacy controls for public storage.

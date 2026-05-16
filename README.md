@@ -1,12 +1,12 @@
 # e-GP Trust Layer
 
-Gasless Ethereum procurement audit and verification middleware for an e-GP-style workflow.
+Secure procurement gateway and gasless Ethereum audit middleware for an e-GP-style workflow.
 
 ## Project Overview
 
-The e-GP Trust Layer is a hackathon MVP that sits beside an existing or simulated procurement system. It verifies the actor through mock Bhutan NDI employment identity, maps the Employment ID to a backend role, enforces backend RBAC and procurement workflow rules, and records validated procurement actions as backend-relayed Ethereum audit proofs.
+The e-GP Trust Layer is a hackathon MVP that sits beside an existing or simulated procurement system. It verifies the actor through mock Bhutan NDI employment identity, maps the Employment ID to a backend role, enforces backend RBAC and tender-specific policy, protects proposal envelopes with MVP AES-GCM encryption, and records validated procurement actions as backend-relayed Ethereum audit proofs.
 
-The reliable demo path uses mock mode: mock NDI, mock storage CIDs, and deterministic mock transaction hashes.
+The reliable demo path uses mock mode: mock NDI, mock storage CIDs, local MVP key release references, and deterministic mock transaction hashes.
 
 ## Problem
 
@@ -34,8 +34,18 @@ The backend, not the browser, verifies identity, maps roles, checks permissions,
 - Not a browser-side blockchain application.
 - No frontend blockchain signing or account connection.
 - No user-funded blockchain transactions.
-- No digital asset, governance, or finance module.
+- No digital asset, governance, DeFi, or token module.
 - No raw Employment ID on-chain.
+
+## MVP Disclosure
+
+- Identity: Bhutan NDI is mocked for demo reliability. Production NDI requires official verifier onboarding and secure event handling.
+- e-GP integration: old e-GP is represented by a simulator that stores encrypted file references and proof hashes.
+- Encryption: proposal files use MVP WebCrypto AES-GCM encryption before upload, and the backend stores encrypted hashes/references only.
+- Key management: key release is local/MVP KMS logic, not a production HSM or government key custody service.
+- Blockchain: `mock`, `local`, and `sepolia` modes are supported. Mock mode is recommended for judging reliability.
+- Browser boundary: there is no browser-side blockchain account connection, wallet signing, or user-paid gas.
+- Privacy boundary: raw Employment ID must stay off-chain; audit and proof records use salted `employeeHash`.
 
 ## Repository Structure
 
@@ -51,10 +61,10 @@ The backend, not the browser, verifies identity, maps roles, checks permissions,
 
 Core layers:
 
-- Frontend: demo dashboard, mock NDI login UI, procurement actions, audit timeline, document verification.
-- Backend: Express APIs, session auth, RBAC middleware, procurement state machine, audit service, document hashing, IPFS/mock storage, relayer service.
-- Database: Prisma models for NDI profiles, users, sessions, tenders, tender versions, bids, approvals, transitions, audit logs, blockchain transactions, and proof requests.
-- Contracts: relayer-only Solidity contracts for roles, tender events, approval order, and audit events.
+- Frontend: demo dashboard, mock NDI login UI, secure-gateway workflow pages, audit timeline, public proof portal, document verification.
+- Backend: Express APIs, session auth, RBAC middleware, procurement state machine, secure procurement gateway, MVP key release service, audit service, document hashing, IPFS/mock storage, relayer service.
+- Database: Prisma models for identity, tenders, versions, bids, approvals, stakeholder assignments, tender manifests, proposal packages, encrypted envelopes, key release requests, evaluation reports, award approvals, audit logs, blockchain transactions, and public proofs.
+- Contracts: relayer-only Solidity contracts for roles, tender events, approval order, audit events, gateway proof events, and key release evidence.
 - Scripts: deterministic demo seed and reset commands.
 
 See [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md).
@@ -367,7 +377,7 @@ Use placeholders only in committed files.
 11. Open `/public-audit` or login as `AUD-001` and show successful events, blocked attempts, employee-hash short forms, timestamps, tx hashes, and public proof labels.
 12. Use `/verify` to upload a changed PDF and show `TAMPERING DETECTED`.
 
-See [docs/DEMO.md](docs/DEMO.md).
+See [docs/DEMO.md](docs/DEMO.md) and [docs/PITCH.md](docs/PITCH.md).
 
 ## Testing Commands
 
@@ -413,8 +423,9 @@ See [docs/SECURITY.md](docs/SECURITY.md).
 
 - Production Bhutan NDI verifier integration.
 - Agency-managed role registry.
-- Encrypted document storage and privacy-preserving CID handling.
+- Production HSM/KMS integration and key custody governance.
+- Privacy-preserving CID/object storage handling.
 - Formal smart contract audit.
-- e-GP API integration instead of simulator-driven actions.
+- Official e-GP API integration instead of simulator-driven actions.
 - Deployment automation for contract address synchronization.
 - Advanced procurement analytics and public verification views.

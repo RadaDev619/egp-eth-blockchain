@@ -2,7 +2,7 @@
   "name": "egp-trust-layer",
   "version": "0.1.0",
   "private": true,
-  "description": "Bhutan e-GP trust layer middleware MVP with mock NDI identity, backend RBAC, gasless relayer proofs, and immutable audit logs.",
+  "description": "Bhutan e-GP trust layer middleware MVP with mock NDI identity, tender-specific policy, encrypted proposal envelopes, gasless relayer proofs, and immutable audit logs.",
   "workspaces": [
     "frontend",
     "backend",

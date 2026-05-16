@@ -323,6 +323,10 @@ Solution:
 
 "Our trust layer adds a backend-enforced control plane: mock Bhutan NDI employment identity, tender-specific assignments, encrypted proposal envelopes, selective key release, threshold approvals, and backend-relayed Ethereum proof events."
 
+Disclosure:
+
+"For the hackathon, Bhutan NDI is mocked, old e-GP is simulated, and key management is an MVP local KMS rather than a production HSM. The proposal encryption itself is real MVP AES-GCM before upload, and blockchain can run in mock, local, or Sepolia mode. The browser never connects a wallet or signs transactions, and raw Employment IDs are not written on-chain."
+
 Demo:
 
 "A tender manifest is committed and approved by threshold. A vendor submits an encrypted proposal package. The old-system simulator stores encrypted references only. Technical evaluators can open technical envelopes after conflict checks, while financial envelopes stay locked until technical evaluation completes. Award approval requires a threshold, and the public portal shows proof hashes without confidential content."

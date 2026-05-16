@@ -72,11 +72,15 @@ Roles:
 - `VENDOR`
 - `EVALUATOR`
 - `FINANCE_OFFICER`
+- `APPROVING_OFFICER`
+- `TEC_MEMBER`
+- `TEC_CHAIR`
+- `FINANCIAL_INSTITUTION_OFFICER`
 - `AUDITOR`
 
 Permissions are explicit and role-scoped in backend code and seed data. Protected APIs use auth middleware and permission middleware. Frontend-submitted roles are ignored.
 
-The updated MVP will add tender-specific assignments. A user may hold a role for one tender and no role for another tender. The backend policy engine must check identity, global role, tender assignment, tender stage, envelope type, and attempted action before releasing data or submitting proofs.
+The updated MVP includes tender-specific assignments. A user may hold a role for one tender and no role for another tender. The backend policy engine checks identity, global role, tender assignment, tender stage, envelope type, and attempted action before releasing data or submitting proofs.
 
 Expected blocked examples:
 
@@ -126,6 +130,16 @@ Rules:
   - `recordEvaluationApproved`
   - `recordPaymentApproved`
   - `recordTamperingDetected`
+  - `recordTenderManifestCommitted`
+  - `recordTenderPublished`
+  - `recordProposalPackageSubmitted`
+  - `recordProposalEnvelopeCommitted`
+  - `recordTenderClosed`
+  - `recordKeyReleaseLogged`
+  - `recordEvaluationReportCommitted`
+  - `recordAwardRecommended`
+  - `recordAwardApproved`
+  - `recordContractHashCommitted`
 - Relayer is called only after auth, RBAC, and state-machine validation.
 - Failed RBAC or invalid workflow attempts must not create successful blockchain proof.
 
@@ -183,7 +197,17 @@ Security rules:
 - Premature financial envelope access must return a blocked response and create audit evidence.
 - Public audit APIs must never return encrypted keys, plaintext files, raw Employment IDs, or confidential proposal content.
 
-For the MVP, key management can be local and demonstrative. It must be documented as an MVP KMS, not a production HSM.
+For the MVP, key management is local and demonstrative. It is an MVP KMS, not a production HSM, government key custody service, or complete enterprise key-management program.
+
+## Encryption Disclosure
+
+Proposal envelope encryption is real at MVP scale:
+
+- The frontend utility uses WebCrypto AES-GCM to encrypt proposal files before upload.
+- The backend accepts encrypted proposal files or encrypted file references, computes server-side hashes, and rejects obvious plaintext proposal uploads.
+- The old e-GP simulator stores encrypted references, encrypted file hashes, byte sizes, filenames, and proof tx hashes.
+
+The MVP does not claim production-grade key custody, hardware-backed key storage, long-term archival encryption governance, or privacy certification for public object storage.
 
 ## Environment And Secret Handling
 
@@ -224,7 +248,7 @@ This MVP:
 - Demonstrates local/mock/Sepolia-capable relayer architecture.
 - Does not replace Bhutan e-GP.
 - Uses simulated old e-GP integration until official e-GP APIs are available.
-- Can demonstrate real MVP encryption, but does not provide production-grade KMS/HSM controls.
+- Demonstrates real MVP AES-GCM proposal encryption before upload, but does not provide production-grade KMS/HSM controls.
 - Does not prove production privacy for public IPFS or object storage.
 - Is not production-certified government infrastructure.
 
