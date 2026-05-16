@@ -268,6 +268,25 @@ describe("role-based navigation", () => {
     expectPresent(screen.getByRole("link", { name: /^Bids$/i }));
     expect(screen.queryByRole("link", { name: /Approvals/i })).toBeNull();
   });
+
+  it("shows secure-gateway navigation from backend-issued permissions", () => {
+    render(
+      <Sidebar
+        user={user("TEC_CHAIR", [
+          "DECLARE_CONFLICT_OF_INTEREST",
+          "SUBMIT_EVALUATION_REPORT",
+          "REQUEST_KEY_RELEASE",
+          "RELEASE_ENVELOPE_KEY",
+          "SUBMIT_AWARD_RECOMMENDATION"
+        ])}
+      />
+    );
+
+    expectPresent(screen.getByRole("link", { name: /Committee/i }));
+    expectPresent(screen.getByRole("link", { name: /KMS Requests/i }));
+    expectPresent(screen.getByRole("link", { name: /Award/i }));
+    expect(screen.queryByRole("link", { name: /Audit Logs/i })).toBeNull();
+  });
 });
 
 describe("forbidden frontend implementation terms", () => {

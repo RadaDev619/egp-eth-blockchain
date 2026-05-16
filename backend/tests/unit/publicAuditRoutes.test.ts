@@ -197,6 +197,9 @@ describe("public audit routes", () => {
       expect(JSON.stringify(payload)).not.toContain("did:key");
       expect(JSON.stringify(payload)).not.toContain("request-private");
       expect(JSON.stringify(payload)).not.toContain("internalNote");
+      expect(JSON.stringify(payload)).not.toContain("keyMaterialReference");
+      expect(JSON.stringify(payload)).not.toContain("encryptedFileReference");
+      expect(JSON.stringify(payload)).not.toContain("proposalContent");
     });
   });
 
@@ -226,6 +229,9 @@ describe("public audit routes", () => {
       expect(JSON.stringify(payload)).not.toContain("actorEmployeeHash");
       expect(JSON.stringify(payload)).not.toContain("route");
       expect(JSON.stringify(payload)).not.toContain("approval-private");
+      expect(JSON.stringify(payload)).not.toContain("actorHolderDID");
+      expect(JSON.stringify(payload)).not.toContain("privateField");
+      expect(JSON.stringify(payload)).not.toContain("contract document");
     });
   });
 

@@ -259,6 +259,9 @@ describe("legacyEgpAdapter", () => {
     });
 
     expect(db.legacyRecords).toHaveLength(0);
+    expect(db.encryptedFileReferences).toHaveLength(0);
+    expect(db.blockchainTransactions).toHaveLength(0);
+    expect(db.auditLogs).toHaveLength(0);
   });
 
   it("lists and fetches legacy records without exposing metadata payloads", async () => {

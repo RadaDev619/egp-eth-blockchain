@@ -419,4 +419,39 @@ describe("awardService", () => {
     expect(JSON.stringify(db.auditLogs)).not.toContain("contract.pdf");
     expect(JSON.stringify(db.auditLogs)).not.toContain("raw document");
   });
+
+  it("does not call award relayer methods when gateway policy rejects the action", async () => {
+    seedBaseTender("AWARD_RECOMMENDED");
+    db.recommendations.push({
+      id: "award-recommendation-1",
+      tenderId: "tender-1",
+      recommendationHash: hashB,
+      status: "APPROVAL_PENDING"
+    });
+    gatewayMocks.assertSecureGatewayAction.mockRejectedValueOnce(
+      Object.assign(new Error("Tender assignment required."), {
+        statusCode: 403,
+        code: "AUTHORIZATION_ERROR"
+      })
+    );
+
+    await expect(
+      approveAward(
+        {
+          tenderId: "tender-1",
+          awardRecommendationId: "award-recommendation-1",
+          signatureHash: hashA
+        },
+        approvingOfficerOne
+      )
+    ).rejects.toMatchObject({
+      statusCode: 403,
+      code: "AUTHORIZATION_ERROR"
+    });
+
+    expect(relayerMocks.recordAwardApproved).not.toHaveBeenCalled();
+    expect(db.blockchainTransactions).toHaveLength(0);
+    expect(db.publicAuditProofs).toHaveLength(0);
+    expect(db.approvals).toHaveLength(0);
+  });
 });

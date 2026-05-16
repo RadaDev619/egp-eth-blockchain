@@ -489,6 +489,8 @@ describe("tenderManifestPublicationService", () => {
 
   it("blocks vendors from approving publication and records a blocked audit event", async () => {
     const tenderId = await createAndRequestPublication();
+    const blockchainTransactionCount = db.blockchainTransactions.length;
+    const publicProofCount = db.publicAuditProofs.length;
 
     await expect(
       approveTenderPublication(
@@ -504,6 +506,8 @@ describe("tenderManifestPublicationService", () => {
     });
 
     expect(db.tenders[0].currentState).toBe("PUBLICATION_PENDING");
+    expect(db.blockchainTransactions).toHaveLength(blockchainTransactionCount);
+    expect(db.publicAuditProofs).toHaveLength(publicProofCount);
     expect(db.auditLogs.at(-1)).toMatchObject({
       action: "UNAUTHORIZED_ACTION_ATTEMPTED",
       status: "BLOCKED",

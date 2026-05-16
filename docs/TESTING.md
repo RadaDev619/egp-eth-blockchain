@@ -70,6 +70,22 @@ Backend tests cover:
 - Relayer is not called on invalid actions.
 - Document hash verification detects tampering.
 
+## Updated Secure Gateway Coverage
+
+Phase 17 adds regression coverage for the updated secure-gateway claims:
+
+| Claim | Coverage |
+| --- | --- |
+| Encrypted proposal upload | `frontend/tests/unit/proposalEncryption.test.ts`, `backend/tests/unit/proposalPackageService.test.ts` |
+| No plaintext proposal storage | Proposal package, encrypted upload, and legacy e-GP adapter tests reject plaintext metadata and assert encrypted references only. |
+| Financial envelope cannot decrypt early | `backend/tests/unit/financialEvaluationService.test.ts` blocks financial access before `FINANCIAL_EVALUATION`. |
+| Key release policy checks | `backend/tests/unit/keyManagementService.test.ts` covers request/release success and denied premature policy access. |
+| Tender-specific role checks | `backend/tests/unit/policyEngine.test.ts` and `backend/tests/unit/tenderAssignmentService.test.ts` prove active assignment is required. |
+| Publication threshold approval | `backend/tests/unit/tenderManifestPublicationService.test.ts` publishes only after threshold approval and records no proof for blocked approval. |
+| Award threshold approval | `backend/tests/unit/awardService.test.ts` keeps the tender at `AWARD_RECOMMENDED` until the approval threshold is met. |
+| Public audit confidentiality | `backend/tests/unit/publicAuditRoutes.test.ts` verifies public APIs omit employee hashes, holder DIDs, private metadata, key material, and encrypted file references. |
+| Relayer/proof not called on failed checks | Proposal, publication, key release, financial access, and award tests assert no blockchain proof rows or relayer calls are produced for blocked actions. |
+
 ## Contract Coverage
 
 Contract tests cover:

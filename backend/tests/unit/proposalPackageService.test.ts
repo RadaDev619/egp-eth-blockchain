@@ -372,6 +372,8 @@ describe("proposalPackageService", () => {
 
     expect(db.proposalPackages).toHaveLength(0);
     expect(db.envelopes).toHaveLength(0);
+    expect(db.blockchainTransactions).toHaveLength(0);
+    expect(db.publicAuditProofs).toHaveLength(0);
     expect(db.auditLogs.at(-1)).toMatchObject({
       action: "UNAUTHORIZED_ACTION_ATTEMPTED",
       status: "BLOCKED",
@@ -395,6 +397,7 @@ describe("proposalPackageService", () => {
     });
 
     expect(db.proposalPackages).toHaveLength(0);
+    expect(db.blockchainTransactions).toHaveLength(0);
     expect(db.auditLogs.at(-1)).toMatchObject({
       action: "UNAUTHORIZED_ACTION_ATTEMPTED",
       actorRole: "PROCUREMENT_OFFICER"
@@ -419,6 +422,8 @@ describe("proposalPackageService", () => {
     expect(db.proposalPackages).toHaveLength(0);
     expect(db.envelopes).toHaveLength(0);
     expect(db.fileReferences).toHaveLength(0);
+    expect(db.blockchainTransactions).toHaveLength(0);
+    expect(db.publicAuditProofs).toHaveLength(0);
   });
 
   it("commits an uploaded encrypted envelope using the server-computed encrypted file hash", async () => {

@@ -92,6 +92,7 @@ const demoProfiles = Object.values(users).map(({ employmentId, employer, positio
   employmentType,
   role
 }));
+let activeEmploymentId: string | null = null;
 
 function auditEvent(input: Partial<Record<string, unknown>> & { action: string; status: string }) {
   return {
@@ -138,6 +139,7 @@ async function installMockApi(page: Page) {
   await page.route("**/auth/ndi/mock-complete", async (route) => {
     const body = route.request().postDataJSON() as { employmentId: string };
     const user = users[body.employmentId];
+    activeEmploymentId = body.employmentId;
     await route.fulfill({
       json: {
         token: body.employmentId,
@@ -158,12 +160,13 @@ async function installMockApi(page: Page) {
   });
 
   await page.route("**/auth/me", async (route) => {
-    const token = route.request().headers().authorization?.replace("Bearer ", "") ?? "";
+    const token = route.request().headers().authorization?.replace("Bearer ", "") || activeEmploymentId || "";
     const user = users[token];
     await route.fulfill({ status: user ? 200 : 401, json: user ? { user } : { error: { code: "UNAUTHENTICATED" } } });
   });
 
   await page.route("**/auth/logout", async (route) => {
+    activeEmploymentId = null;
     await route.fulfill({ status: 204 });
   });
 
@@ -375,9 +378,21 @@ async function installMockApi(page: Page) {
 }
 
 async function loginAs(page: Page, profileText: string) {
-  await page.goto("/login");
-  await page.getByRole("button", { name: new RegExp(profileText) }).click();
-  await page.getByRole("button", { name: /Continue/i }).click();
+  const selectedUser = Object.values(users).find((user) => user.position.includes(profileText));
+
+  if (!selectedUser) {
+    throw new Error(`Unknown demo profile: ${profileText}`);
+  }
+
+  activeEmploymentId = selectedUser.employmentId;
+  if (page.url() === "about:blank") {
+    await page.goto("/login", { waitUntil: "domcontentloaded" });
+  }
+  await page.evaluate(
+    ({ token }) => window.localStorage.setItem("egp_trust_layer_session", token),
+    { token: selectedUser.employmentId }
+  );
+  await page.goto("/dashboard", { waitUntil: "domcontentloaded" });
   await expect(page).toHaveURL(/\/dashboard/);
 }
 
