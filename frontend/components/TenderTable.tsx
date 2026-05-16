@@ -58,7 +58,7 @@ export function TenderTable({ tenders, user, onSelect, selectedTenderId, emptyMe
                   <td className="px-4 py-4">
                     <div className="min-w-52">
                       <p className="text-sm font-semibold text-slate-950">{version?.title ?? tender.tenderCode}</p>
-                      <p className="mt-1 text-xs text-slate-500">{tender.tenderCode} · {tender.agency}</p>
+                      <p className="mt-1 text-xs text-slate-500">{tender.tenderCode} - {tender.agency}</p>
                     </div>
                   </td>
                   <td className="px-4 py-4">
@@ -75,25 +75,34 @@ export function TenderTable({ tenders, user, onSelect, selectedTenderId, emptyMe
                   </td>
                   <td className="px-4 py-4 text-sm text-slate-600">{formatDate(tender.updatedAt)}</td>
                   <td className="px-4 py-4">
-                    {onSelect ? (
-                      <button
-                        type="button"
-                        onClick={() => onSelect(tender)}
-                        className="inline-flex min-h-9 items-center gap-2 rounded-md border border-slate-300 px-3 py-1.5 text-sm font-semibold text-slate-800 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-700"
-                      >
-                        Select
-                        <ArrowRight className="h-4 w-4" aria-hidden="true" />
-                      </button>
-                    ) : user?.permissions.includes("CREATE_TENDER") ? (
+                    <div className="flex flex-wrap gap-2">
                       <Link
-                        href="/tenders/create"
+                        href={`/tenders/${tender.id}`}
                         className="inline-flex min-h-9 items-center gap-2 rounded-md border border-slate-300 px-3 py-1.5 text-sm font-semibold text-slate-800 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-700"
                       >
-                        New Tender
+                        Details
+                        <ArrowRight className="h-4 w-4" aria-hidden="true" />
                       </Link>
-                    ) : (
-                      <span className="text-xs font-medium text-slate-500">View only</span>
-                    )}
+                      {onSelect ? (
+                        <button
+                          type="button"
+                          onClick={() => onSelect(tender)}
+                          className="inline-flex min-h-9 items-center gap-2 rounded-md border border-slate-300 px-3 py-1.5 text-sm font-semibold text-slate-800 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-700"
+                        >
+                          Select
+                          <ArrowRight className="h-4 w-4" aria-hidden="true" />
+                        </button>
+                      ) : user?.permissions.includes("CREATE_TENDER") ? (
+                        <Link
+                          href="/tenders/create"
+                          className="inline-flex min-h-9 items-center gap-2 rounded-md border border-slate-300 px-3 py-1.5 text-sm font-semibold text-slate-800 hover:bg-slate-100 focus:outline-none focus:ring-2 focus:ring-emerald-700"
+                        >
+                          New Tender
+                        </Link>
+                      ) : (
+                        <span className="text-xs font-medium text-slate-500">View only</span>
+                      )}
+                    </div>
                   </td>
                 </tr>
               );

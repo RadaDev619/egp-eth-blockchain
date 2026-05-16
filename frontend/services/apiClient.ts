@@ -12,7 +12,17 @@ import type {
   VerifyDocumentInput
 } from "@/types/audit";
 import type { ApprovalInput, CreateTenderInput, SubmitBidInput, Tender } from "@/types/procurement";
-import type { UploadEncryptedEnvelopeInput } from "@/types/proposal";
+import type { ProposalPackage, UploadEncryptedEnvelopeInput } from "@/types/proposal";
+import type {
+  AwardApprovalResult,
+  AwardWorkspace,
+  CommitteeDashboard,
+  FinancialWorkspace,
+  KeyReleaseActionResult,
+  LegacyEgpRecord,
+  ManifestStatusResponse,
+  SubmitProposalPackageInput
+} from "@/types/gateway";
 
 const CONFIGURED_API_BASE_URL = process.env.NEXT_PUBLIC_API_BASE_URL ?? "http://localhost:4000";
 const TOKEN_KEY = "egp_trust_layer_session";
@@ -244,9 +254,128 @@ export const verificationApi = {
 };
 
 export const proposalApi = {
+  listForTender: (tenderId: string) =>
+    request<{ proposalPackages: ProposalPackage[] }>(`/gateway/tenders/${encodeURIComponent(tenderId)}/proposals`),
+  getPackage: (proposalPackageId: string) =>
+    request<{ proposalPackage: ProposalPackage }>(`/gateway/proposals/${encodeURIComponent(proposalPackageId)}`),
+  submitPackage: (input: SubmitProposalPackageInput) =>
+    request<{ proposalPackage: ProposalPackage; envelopes: unknown[] }>(`/gateway/tenders/${encodeURIComponent(input.tenderId)}/proposals`, {
+      method: "POST",
+      body: JSON.stringify({
+        packageHash: input.packageHash,
+        envelopes: input.envelopes
+      })
+    }),
   uploadEncryptedEnvelope: (input: UploadEncryptedEnvelopeInput) =>
     request<{ envelope: unknown }>(`/gateway/proposals/${encodeURIComponent(input.proposalPackageId)}/envelopes/upload`, {
       method: "POST",
       body: encryptedEnvelopeFormData(input)
     })
+};
+
+export const manifestApi = {
+  getStatus: (tenderId: string) => request<ManifestStatusResponse>(`/gateway/tenders/${encodeURIComponent(tenderId)}/manifest`),
+  create: (input: {
+    tenderCode: string;
+    agency: string;
+    title: string;
+    description: string;
+    manifestHash: string;
+    documentsHash?: string;
+    rulesHash?: string;
+    criteriaHash?: string;
+    publicationThreshold?: number;
+  }) =>
+    request<ManifestStatusResponse>("/gateway/tenders/manifest", {
+      method: "POST",
+      body: JSON.stringify(input)
+    }),
+  requestPublication: (tenderId: string, manifestId?: string) =>
+    request<ManifestStatusResponse>(`/gateway/tenders/${encodeURIComponent(tenderId)}/publication/request`, {
+      method: "POST",
+      body: JSON.stringify({ manifestId })
+    }),
+  approvePublication: (tenderId: string, input: { manifestId?: string; signatureHash: string; comments?: string }) =>
+    request<ManifestStatusResponse>(`/gateway/tenders/${encodeURIComponent(tenderId)}/publication/approve`, {
+      method: "POST",
+      body: JSON.stringify(input)
+    })
+};
+
+export const committeeApi = {
+  getDashboard: (tenderId: string) =>
+    request<{ dashboard: CommitteeDashboard }>(`/gateway/tenders/${encodeURIComponent(tenderId)}/committee`),
+  declareConflict: (tenderId: string, input: { declarationStatus: string; declarationHash: string }) =>
+    request<{ declaration: unknown }>(`/gateway/tenders/${encodeURIComponent(tenderId)}/committee/conflict-declarations`, {
+      method: "POST",
+      body: JSON.stringify(input)
+    }),
+  listTechnicalEnvelopes: (tenderId: string) =>
+    request<{ envelopes: unknown[] }>(`/gateway/tenders/${encodeURIComponent(tenderId)}/committee/technical-envelopes`),
+  submitEvaluationReport: (
+    tenderId: string,
+    input: { reportHash: string; technicalScoreHash?: string; financialScoreHash?: string }
+  ) =>
+    request<{ report: unknown }>(`/gateway/tenders/${encodeURIComponent(tenderId)}/committee/evaluation-reports`, {
+      method: "POST",
+      body: JSON.stringify(input)
+    }),
+  finalizeEvaluationReport: (tenderId: string, reportId: string) =>
+    request<{ report: unknown }>(
+      `/gateway/tenders/${encodeURIComponent(tenderId)}/committee/evaluation-reports/${encodeURIComponent(reportId)}/finalize`,
+      { method: "POST" }
+    )
+};
+
+export const awardApi = {
+  getWorkspace: (tenderId: string) => request<{ workspace: AwardWorkspace }>(`/gateway/tenders/${encodeURIComponent(tenderId)}/award`),
+  submitRecommendation: (tenderId: string, input: { evaluationReportId?: string; recommendedVendorStakeholderId?: string; recommendationHash: string }) =>
+    request<{ recommendation: unknown }>(`/gateway/tenders/${encodeURIComponent(tenderId)}/award/recommendations`, {
+      method: "POST",
+      body: JSON.stringify(input)
+    }),
+  approve: (tenderId: string, awardRecommendationId: string, input: { signatureHash: string; comments?: string }) =>
+    request<AwardApprovalResult>(
+      `/gateway/tenders/${encodeURIComponent(tenderId)}/award/recommendations/${encodeURIComponent(awardRecommendationId)}/approvals`,
+      {
+        method: "POST",
+        body: JSON.stringify(input)
+      }
+    ),
+  commitContractProofs: (
+    tenderId: string,
+    input: { letterOfIntentHash?: string; letterOfAcceptanceHash?: string; contractHash?: string }
+  ) =>
+    request<{ tenderId: string; proofs: unknown[] }>(`/gateway/tenders/${encodeURIComponent(tenderId)}/award/contract-proofs`, {
+      method: "POST",
+      body: JSON.stringify(input)
+    })
+};
+
+export const keyManagementApi = {
+  requestRelease: (proposalEnvelopeId: string) =>
+    request<KeyReleaseActionResult>(`/gateway/proposal-envelopes/${encodeURIComponent(proposalEnvelopeId)}/key-release/request`, {
+      method: "POST"
+    }),
+  release: (keyReleaseRequestId: string) =>
+    request<KeyReleaseActionResult>(`/gateway/key-release-requests/${encodeURIComponent(keyReleaseRequestId)}/release`, {
+      method: "POST"
+    }),
+  getFinancialWorkspace: (tenderId: string) =>
+    request<{ workspace: FinancialWorkspace }>(`/gateway/tenders/${encodeURIComponent(tenderId)}/financial-evaluation`),
+  requestFinancialRelease: (tenderId: string, proposalEnvelopeId: string) =>
+    request<KeyReleaseActionResult>(
+      `/gateway/tenders/${encodeURIComponent(tenderId)}/financial-evaluation/envelopes/${encodeURIComponent(proposalEnvelopeId)}/key-release/request`,
+      { method: "POST" }
+    ),
+  releaseFinancial: (tenderId: string, keyReleaseRequestId: string) =>
+    request<KeyReleaseActionResult>(
+      `/gateway/tenders/${encodeURIComponent(tenderId)}/financial-evaluation/key-release-requests/${encodeURIComponent(keyReleaseRequestId)}/release`,
+      { method: "POST" }
+    )
+};
+
+export const legacyEgpApi = {
+  listRecords: (filters?: { tenderId?: string; recordType?: string; trustLayerTxHash?: string }) =>
+    request<{ records: LegacyEgpRecord[] }>(`/gateway/legacy-egp/records${auditQueryString(filters)}`)
 };

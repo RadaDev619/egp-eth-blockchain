@@ -6,13 +6,17 @@ import {
   BadgeCheck,
   BarChart3,
   ClipboardList,
+  FileLock2,
   FileCheck2,
   Gavel,
+  KeyRound,
   Landmark,
   LayoutDashboard,
   SearchCheck,
   ScrollText,
-  ShieldCheck
+  ShieldCheck,
+  Trophy,
+  UsersRound
 } from "lucide-react";
 import type { AuthenticatedUser, Permission } from "@/types/auth";
 
@@ -26,6 +30,20 @@ const navItems: Array<{
   { href: "/tenders", label: "Tenders", icon: ClipboardList, permissions: ["CREATE_TENDER", "VIEW_ELIGIBLE_TENDERS"] },
   { href: "/bids", label: "Bids", icon: FileCheck2, permissions: ["SUBMIT_BID"] },
   { href: "/approvals", label: "Approvals", icon: Gavel, permissions: ["APPROVE_EVALUATION", "APPROVE_PAYMENT"] },
+  { href: "/proposals/submit", label: "Proposals", icon: FileLock2, permissions: ["SUBMIT_PROPOSAL_PACKAGE"] },
+  {
+    href: "/committee",
+    label: "Committee",
+    icon: UsersRound,
+    permissions: ["DECLARE_CONFLICT_OF_INTEREST", "SUBMIT_EVALUATION_REPORT", "REQUEST_KEY_RELEASE"]
+  },
+  {
+    href: "/award",
+    label: "Award",
+    icon: Trophy,
+    permissions: ["SUBMIT_AWARD_RECOMMENDATION", "APPROVE_AWARD", "COMMIT_CONTRACT_HASH"]
+  },
+  { href: "/kms-requests", label: "KMS Requests", icon: KeyRound, permissions: ["REQUEST_KEY_RELEASE", "RELEASE_ENVELOPE_KEY"] },
   { href: "/audit", label: "Audit Logs", icon: ScrollText, permissions: ["VIEW_AUDIT_LOGS"] },
   { href: "/verify", label: "Integrity Verification", icon: ShieldCheck, permissions: ["VERIFY_DOCUMENT"] },
   { href: "/proofs", label: "Blockchain Proofs", icon: BarChart3, permissions: ["VIEW_BLOCKCHAIN_PROOFS"] },

@@ -37,6 +37,26 @@ const roleFocus: Record<Role, { title: string; summary: string; primaryAction: s
     title: "Audit Oversight",
     summary: "Inspect procurement timelines, blocked attempts, and backend relayer proofs.",
     primaryAction: "View Audit Logs"
+  },
+  TEC_MEMBER: {
+    title: "Technical Committee",
+    summary: "Declare conflict status and review assigned technical evidence.",
+    primaryAction: "Review Committee"
+  },
+  TEC_CHAIR: {
+    title: "Committee Chair",
+    summary: "Finalize evaluation reports and submit award recommendation hashes.",
+    primaryAction: "Finalize Evaluation"
+  },
+  APPROVING_OFFICER: {
+    title: "Threshold Approval",
+    summary: "Approve tender publication and award decisions under threshold policy.",
+    primaryAction: "Approve Award"
+  },
+  FINANCIAL_INSTITUTION_OFFICER: {
+    title: "Financial Key Release",
+    summary: "Release permitted envelope keys after policy checks pass.",
+    primaryAction: "KMS Requests"
   }
 };
 
