@@ -1,5 +1,6 @@
 import type { AuditStatus, BlockchainStatus, Prisma, ProposalEnvelopeType, Role, TenderState } from "@prisma/client";
 import { appendAuditEvent, actorAuditFields } from "./auditService.js";
+import { createBlockchainTransactionRecord } from "./blockchainTransactionService.js";
 import { recordKeyReleaseLogged, type RelayerTransactionResult } from "./relayer.js";
 import { assertSecureGatewayAction, SecureGatewayAction } from "./secureProcurementGateway.js";
 import { permissions, type AuthenticatedUser } from "../types/domain.js";
@@ -107,23 +108,21 @@ async function createBlockchainTransaction(
     tenderId: string;
   }
 ) {
-  return client.blockchainTransaction.create({
-    data: {
-      txHash: input.relayerResult.txHash,
-      network: input.relayerResult.network,
-      chainId: input.relayerResult.chainId ?? null,
-      action: input.action,
-      resourceType: input.resourceType,
-      resourceId: input.resourceId,
-      tenderId: input.tenderId,
-      contractAddress: input.relayerResult.contractAddress ?? null,
-      relayerAddress: input.relayerResult.relayerAddress ?? null,
-      status: input.relayerResult.status as BlockchainStatus,
-      blockNumber: input.relayerResult.blockNumber ?? null,
-      explorerUrl: input.relayerResult.explorerUrl ?? null,
-      confirmedAt:
-        input.relayerResult.status === "CONFIRMED" || input.relayerResult.status === "MOCK_CONFIRMED" ? new Date() : null
-    }
+  return createBlockchainTransactionRecord(client, {
+    txHash: input.relayerResult.txHash,
+    network: input.relayerResult.network,
+    chainId: input.relayerResult.chainId ?? null,
+    action: input.action,
+    resourceType: input.resourceType,
+    resourceId: input.resourceId,
+    tenderId: input.tenderId,
+    contractAddress: input.relayerResult.contractAddress ?? null,
+    relayerAddress: input.relayerResult.relayerAddress ?? null,
+    status: input.relayerResult.status as BlockchainStatus,
+    blockNumber: input.relayerResult.blockNumber ?? null,
+    explorerUrl: input.relayerResult.explorerUrl ?? null,
+    confirmedAt:
+      input.relayerResult.status === "CONFIRMED" || input.relayerResult.status === "MOCK_CONFIRMED" ? new Date() : null
   });
 }
 

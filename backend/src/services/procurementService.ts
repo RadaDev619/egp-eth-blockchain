@@ -9,6 +9,7 @@ import {
   logTenderVersionCreated,
   logUnauthorizedAttempt
 } from "./auditService.js";
+import { createBlockchainTransactionRecord } from "./blockchainTransactionService.js";
 import { storeDocumentEvidence } from "./ipfsService.js";
 import { canTransition, ProcurementAction, type TransitionResult } from "./procurementStateMachine.js";
 import {
@@ -355,8 +356,8 @@ export async function createTender(input: TenderInput, user: AuthenticatedUser, 
         versionNumber: 1
       }
     });
-    await tx.blockchainTransaction.create({
-      data: blockchainTransactionData({
+    await createBlockchainTransactionRecord(tx, {
+      ...blockchainTransactionData({
         relayerResult,
         action: "TENDER_CREATED",
         resourceType: "TENDER",
@@ -462,8 +463,8 @@ export async function amendTender(input: TenderAmendInput, user: AuthenticatedUs
         changeReason: input.changeReason
       }
     });
-    await tx.blockchainTransaction.create({
-      data: blockchainTransactionData({
+    await createBlockchainTransactionRecord(tx, {
+      ...blockchainTransactionData({
         relayerResult,
         action: "TENDER_VERSION_CREATED",
         resourceType: "TENDER_VERSION",
@@ -559,8 +560,8 @@ export async function submitBid(input: BidSubmitInput, user: AuthenticatedUser, 
         bidHash: input.bidHash
       }
     });
-    await tx.blockchainTransaction.create({
-      data: blockchainTransactionData({
+    await createBlockchainTransactionRecord(tx, {
+      ...blockchainTransactionData({
         relayerResult,
         action: "BID_SUBMITTED",
         resourceType: "BID",
@@ -662,8 +663,8 @@ async function approveTender(input: ApprovalInput, user: AuthenticatedUser, cont
         approvalType: type
       }
     });
-    await tx.blockchainTransaction.create({
-      data: blockchainTransactionData({
+    await createBlockchainTransactionRecord(tx, {
+      ...blockchainTransactionData({
         relayerResult,
         action: type === "EVALUATION" ? "EVALUATION_APPROVED" : "PAYMENT_APPROVED",
         resourceType: "APPROVAL",

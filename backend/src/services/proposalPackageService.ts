@@ -1,5 +1,6 @@
 import type { BlockchainStatus, Prisma, ProposalEnvelopeType, Role, TenderState } from "@prisma/client";
 import { appendAuditEvent, actorAuditFields } from "./auditService.js";
+import { createBlockchainTransactionRecord } from "./blockchainTransactionService.js";
 import { assertSecureGatewayAction, SecureGatewayAction } from "./secureProcurementGateway.js";
 import type { AuthenticatedUser } from "../types/domain.js";
 import { permissions } from "../types/domain.js";
@@ -222,22 +223,20 @@ async function createBlockchainTransaction(
     tenderId: string;
   }
 ) {
-  return client.blockchainTransaction.create({
-    data: {
-      txHash: input.proof.txHash,
-      network: input.proof.network,
-      chainId: input.proof.chainId,
-      action: input.proof.action,
-      resourceType: input.resourceType,
-      resourceId: input.resourceId,
-      tenderId: input.tenderId,
-      contractAddress: input.proof.contractAddress,
-      relayerAddress: input.proof.relayerAddress,
-      status: input.proof.status,
-      blockNumber: input.proof.blockNumber,
-      explorerUrl: input.proof.explorerUrl,
-      confirmedAt: input.proof.confirmedAt
-    }
+  return createBlockchainTransactionRecord(client, {
+    txHash: input.proof.txHash,
+    network: input.proof.network,
+    chainId: input.proof.chainId,
+    action: input.proof.action,
+    resourceType: input.resourceType,
+    resourceId: input.resourceId,
+    tenderId: input.tenderId,
+    contractAddress: input.proof.contractAddress,
+    relayerAddress: input.proof.relayerAddress,
+    status: input.proof.status,
+    blockNumber: input.proof.blockNumber,
+    explorerUrl: input.proof.explorerUrl,
+    confirmedAt: input.proof.confirmedAt
   });
 }
 

@@ -7,6 +7,7 @@ import {
   logTamperingDetected,
   logUnauthorizedAttempt
 } from "./auditService.js";
+import { createBlockchainTransactionRecord } from "./blockchainTransactionService.js";
 import { canTransition, ProcurementAction, type TransitionResult } from "./procurementStateMachine.js";
 import { recordTamperingDetected, type RelayerTransactionResult } from "./relayer.js";
 import { prisma } from "../utils/prisma.js";
@@ -339,8 +340,8 @@ export async function verifyDocument(input: VerifyDocumentInput, user: Authentic
     await logDocumentVerificationFailed(baseAuditInput, tx);
 
     if (relayerResult) {
-      await tx.blockchainTransaction.create({
-        data: blockchainTransactionData({
+      await createBlockchainTransactionRecord(tx, {
+        ...blockchainTransactionData({
           relayerResult,
           action: "TAMPERING_DETECTED",
           resourceType: "DOCUMENT",
