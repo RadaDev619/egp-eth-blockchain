@@ -2,24 +2,9 @@
 
 ## Core Message
 
-The e-GP Trust Layer does not replace Bhutan e-GP. It adds a blockchain-backed trust and audit middleware layer that uses mock Bhutan NDI employment identity, backend RBAC, procurement state-machine enforcement, gasless Ethereum relayer proofs, and immutable audit logs to prevent hidden procurement manipulation.
+This is a Bhutan e-GP trust layer middleware MVP. It does not replace Bhutan e-GP. It sits beside an existing or simulated procurement system and adds mock Bhutan NDI employment identity, backend tender-specific policy, encrypted proposal envelopes, selective key release, threshold approvals, backend gasless Ethereum relayer proofs, and privacy-safe immutable audit logs.
 
-## Current Baseline vs Updated Target
-
-The current working baseline demonstrates role-based tender creation, bid submission, approval blocking, relayer proof hashes, audit logs, and document tampering detection.
-
-The updated secure-gateway MVP will add:
-
-- Tender manifest commitments.
-- Threshold tender publication approval.
-- Structured vendor proposal envelopes.
-- Proposal encryption before old-system storage.
-- Selective key release by tender stage.
-- Committee conflict declaration and evaluation report proof.
-- Threshold award approval.
-- Privacy-safe public audit portal.
-
-Until those phases are implemented, use the current golden demo below as the stable fallback.
+The Phase 18 demo now focuses on proposal confidentiality and public proof trails, not the older bid/payment-only flow.
 
 ## Recommended Demo Mode
 
@@ -31,15 +16,31 @@ BLOCKCHAIN_MODE=mock
 IPFS_MODE=mock
 ```
 
-Mock mode still proves the trust flow:
+Mock mode still proves the important control path:
 
-- Employment identity maps to role.
-- Backend enforces permissions.
-- Backend enforces workflow order.
-- Blocked attempts are visible.
-- Valid actions receive deterministic tx hashes.
+- Roles come from backend-mapped employment identity.
+- Tender-specific assignments are enforced by the backend.
+- Proposal files are represented as encrypted references and hash commitments.
+- Key release is blocked unless tender stage and role policy match.
+- Valid actions receive deterministic backend relayer tx hashes.
+- Public audit shows hashes and tx references without proposal contents.
 
-Use local or Sepolia mode only if setup, funding, RPC, and confirmation time are stable.
+## Demo Personas
+
+The mock Bhutan NDI login page includes these deterministic profiles:
+
+| Employment ID | Role | Demo purpose |
+| --- | --- | --- |
+| `PROC-001` | `PROCUREMENT_OFFICER` | Create manifest, request publication, manage simulator records, commit contract proofs |
+| `APP-001` | `APPROVING_OFFICER` | Approve publication and first award approval |
+| `APP-002` | `APPROVING_OFFICER` | Second award approval to meet threshold |
+| `VEND-001` | `VENDOR` | Submit encrypted proposal package |
+| `TEC-001` | `TEC_MEMBER` | Conflict declaration and technical envelope access |
+| `TEC-CHAIR-001` | `TEC_CHAIR` | Finalize evaluation and submit award recommendation |
+| `BANK-001` | `FINANCIAL_INSTITUTION_OFFICER` | Financial envelope key release after technical completion |
+| `AUD-001` | `AUDITOR` | Full audit timeline and document verification |
+
+Legacy baseline personas `EVAL-001` and `FIN-001` remain for the old payment-approval fallback flow.
 
 ## Reset Before Judging
 
@@ -52,13 +53,19 @@ npm run prisma:generate
 npm run demo:reset
 ```
 
-Expected deterministic baseline:
+Expected deterministic secure-gateway seed:
 
 - Tender: `TDR-DEMO-001`
-- Personas: `PROC-001`, `VEND-001`, `EVAL-001`, `FIN-001`, `AUD-001`
-- Preloaded evidence: tender created, finance-before-evaluation blocked, vendor payment approval blocked
+- Seeded stage: `TECHNICAL_EVALUATION`
+- Tender manifest and publication approval proofs
+- Five encrypted proposal envelopes
+- Old e-GP simulator records showing encrypted references only
+- Approved technical key release for `TEC-001`
+- Premature financial access remains blocked until evaluation finalization
+- Award recommendation and one approval preloaded so `APP-002` can meet threshold quickly
+- Public audit proofs with no raw Employment ID or proposal content
 
-If the database command fails, start PostgreSQL or update `DATABASE_URL`.
+The seed is intentionally fast-forwarded to the confidentiality section of the demo because the current UI does not yet include a full tender-close operation screen. You can still create a fresh manifest and proposal package manually, but `TDR-DEMO-001` is the reliable judging path.
 
 ## Start The App
 
@@ -80,227 +87,273 @@ Open:
 http://localhost:3000
 ```
 
-## Golden Demo Flow
+## Phase 18 Golden Demo Flow
 
-### 1. Login As Procurement Officer
+### 1. Show The Trust Boundary
 
-Persona:
+Open `/login`.
+
+Show:
+
+- Login with Bhutan NDI.
+- Mock NDI demo profiles.
+- Roles are displayed after backend session creation.
+
+Say:
+
+"The browser does not choose a role. Employment identity maps to a backend role and tender-specific assignment."
+
+### 2. Procurement Officer Reviews Manifest Proofs
+
+Login as:
 
 ```text
 PROC-001
 ```
 
-Show:
-
-- Login with Bhutan NDI.
-- Mock NDI demo profile.
-- Employment ID mapped to `PROCUREMENT_OFFICER`.
-- Create tender action available.
-
-Say:
-
-"Role is not selected manually. It comes from employment identity mapping in the backend."
-
-### 2. Create Tender
-
-Create a tender with a PDF document.
+Open `/tenders`, then `TDR-DEMO-001`, then `/tenders/{id}/manifest`.
 
 Show:
 
-- State `CREATED`.
-- Version `v1`.
-- Server-computed document hash.
-- Mock CID or IPFS CID.
+- Manifest hash.
+- Publication threshold.
+- Publication approvals.
 - Backend relayer proof tx hash.
-- Audit event `TENDER_CREATED`.
 
 Say:
 
-"The tender is recorded as an append-only procurement event."
+"The tender starts as a manifest commitment. Publication requires threshold approval before vendors can rely on it."
 
-### 3. Login As Vendor
+### 3. Vendor Submits Encrypted Structured Proposal
 
-Persona:
+Login as:
 
 ```text
 VEND-001
 ```
 
-Submit a bid.
+Open `/proposals/submit`.
 
 Show:
 
-- State `BID_SUBMITTED`.
-- Audit event `BID_SUBMITTED`.
-- tx hash in mock/local/Sepolia mode.
+- Five envelope types: eligibility, technical, financial, supporting documents, tender security.
+- Storage references ending in `.enc`.
+- No proposal content entered into the trust layer UI.
 
-### 4. Login As Finance Officer Too Early
+Use the seeded package or submit a package against a published/open tender when available.
 
-Persona:
+Say:
+
+"The trust layer commits encrypted envelope hashes. The old-system simulator stores encrypted references, not plaintext proposal documents."
+
+### 4. Show Old e-GP Simulator References
+
+Login as:
 
 ```text
-FIN-001
+PROC-001
 ```
 
-Attempt payment approval before evaluation approval.
+Open `/tenders/{id}` for `TDR-DEMO-001`.
+
+Show:
+
+- Legacy e-GP simulator records.
+- `ENCRYPTED_REFERENCE_ONLY`.
+- Trust-layer tx hash references.
+
+Say:
+
+"This demonstrates integration without claiming production e-GP API access."
+
+### 5. TEC Member Declares No Conflict
+
+Login as:
+
+```text
+TEC-001
+```
+
+Open `/committee`.
+
+Show:
+
+- Assigned tender.
+- Conflict declaration status.
+- Active committee assignment.
+
+Click `Declare No Conflict` if not already declared.
+
+Say:
+
+"Committee access is tender-specific and blocked when conflict policy is not satisfied."
+
+### 6. TEC Member Opens Technical Envelope Only
+
+Still as `TEC-001`, open `/kms-requests` or use `/committee`.
+
+Show:
+
+- Technical envelope metadata.
+- Approved/requested technical key release.
+- Financial envelope is not released in the technical stage.
+
+Say:
+
+"The technical evaluator can access only technical material. Financial proposal access is stage-gated."
+
+### 7. Financial Envelope Early Access Is Blocked
+
+Login as:
+
+```text
+BANK-001
+```
+
+Open `/kms-requests`, select `TDR-DEMO-001`, and load key requests.
 
 Expected:
 
-- Request is blocked.
-- UI shows blocked alert.
-- Backend returns invalid workflow transition.
-- Audit event `INVALID_TRANSITION_ATTEMPTED`.
-- No successful payment blockchain proof is created.
+- Financial workspace locked.
+- The UI explains that `FINANCIAL_EVALUATION` is required.
+- Blocked access is logged.
 
 Say:
 
-"Even the finance role cannot bypass the required evaluation step."
+"Even a financial role cannot open financial envelopes before technical evaluation completes."
 
-### 5. Login As Evaluator
+### 8. TEC Chair Finalizes Evaluation
 
-Persona:
-
-```text
-EVAL-001
-```
-
-Approve evaluation.
-
-Show:
-
-- State `EVALUATION_APPROVED`.
-- Audit event `EVALUATION_APPROVED`.
-- tx hash.
-
-### 6. Login As Finance Officer Again
-
-Persona:
+Login as:
 
 ```text
-FIN-001
+TEC-CHAIR-001
 ```
 
-Approve payment.
+Open `/committee/evaluation`, select `TDR-DEMO-001`, and load reports.
 
-Show:
-
-- State `PAYMENT_APPROVED`.
-- Audit event `PAYMENT_APPROVED`.
-- tx hash.
-- Blockchain status.
-
-### 7. Login As Vendor And Attempt Payment Approval
-
-Persona:
-
-```text
-VEND-001
-```
-
-Attempt payment approval.
+Finalize the seeded report or submit and finalize a report hash.
 
 Expected:
 
-- Request is blocked.
-- Backend returns authorization failure.
-- Audit event `UNAUTHORIZED_ACTION_ATTEMPTED`.
-- No successful payment blockchain proof is created.
+- Tender moves to `FINANCIAL_EVALUATION`.
+- Evaluation report proof is recorded.
 
 Say:
 
-"Wrong roles cannot perform restricted procurement actions."
+"The report content stays off-chain. The proof is a signed hash commitment."
 
-### 8. Login As Auditor
+### 9. Financial Role Releases Financial Envelope
 
-Persona:
+Login as:
 
 ```text
-AUD-001
+BANK-001
 ```
 
-Open audit timeline.
+Open `/kms-requests`, select `TDR-DEMO-001`, and load key requests again.
+
+Expected:
+
+- Financial evaluation workspace is available.
+- Financial key release can be requested/released according to policy.
+- Key release proof appears as backend relayer evidence.
+
+### 10. TEC Chair Submits Award Recommendation
+
+Login as:
+
+```text
+TEC-CHAIR-001
+```
+
+Open `/award`, select `TDR-DEMO-001`, and load the award workspace.
+
+Submit or confirm an award recommendation hash.
 
 Show:
 
-- Chronological successful events.
-- Blocked finance-before-evaluation attempt.
-- Blocked vendor payment approval attempt.
-- Actor role.
-- employeeHash short form.
-- State changes.
-- Rejection reasons.
-- tx hashes.
-- Blockchain status.
+- Recommendation hash.
+- Backend relayer proof.
+- Tender state `AWARD_RECOMMENDED`.
+
+### 11. Approvers Meet Award Threshold
+
+Login as:
+
+```text
+APP-002
+```
+
+Open `/award`, select `TDR-DEMO-001`, and approve the recommendation.
+
+Expected:
+
+- Approval count reaches threshold.
+- Tender state becomes `AWARD_APPROVED`.
+- Award approval proof is recorded.
+
+### 12. Public Audit Portal
+
+Open `/public-audit`.
+
+Show:
+
+- Tender manifest proof.
+- Proposal package/envelope commitments.
+- Evaluation report hash.
+- Award recommendation and approval proofs.
+- tx hashes and timestamps.
 
 Say:
 
-"The auditor can see both valid actions and failed manipulation attempts."
-
-### 9. Document Verification
-
-Open `/verify`.
-
-Upload the expected document if available, then upload a modified PDF.
-
-Show:
-
-- Expected hash.
-- Uploaded hash.
-- Verification failed result.
-- `TAMPERING DETECTED` alert.
-- Tampering audit event.
-
-## Updated Target Demo Flow
-
-The next demo flow will replace the simple bid and payment path with a confidentiality and proof trail path:
-
-1. Procurement Officer creates a tender manifest containing documents, rules, dates, evaluation criteria, and approval policy.
-2. Publication requires threshold approval from authorized officers.
-3. Vendor submits a structured encrypted proposal package with eligibility, technical, financial, supporting, and tender security envelopes.
-4. Existing e-GP simulator stores only encrypted file references and Ethereum tx references.
-5. Tender closes and the close event is recorded.
-6. TEC member signs conflict-of-interest declaration.
-7. TEC member can decrypt only the technical envelope during technical evaluation.
-8. Premature financial envelope access is blocked and logged.
-9. Technical evaluation report hash is committed.
-10. Financial role can decrypt the financial envelope only after technical completion.
-11. TEC Chair submits winner recommendation hash.
-12. Award approval requires threshold approval.
-13. Public audit portal shows hashes, statuses, timestamps, roles, and tx hashes without exposing confidential proposal contents.
+"The public audit view proves the sequence without exposing raw Employment IDs, proposal contents, decryption keys, or private metadata."
 
 ## Five-Minute Pitch Script
 
 Opening:
 
-"Procurement systems depend heavily on trust. If a privileged actor can secretly edit records or bypass approvals, the audit trail becomes weak."
+"Procurement integrity is not only about preventing payment bypass. It is also about keeping proposal contents confidential until the correct stage while still proving every critical action happened."
 
 Problem:
 
-"Existing centralized systems can record logs, but administrators or internal processes may still control the database."
+"A centralized procurement system can store documents and logs, but administrators or privileged actors may still control edits, timing, and access."
 
 Solution:
 
-"Our e-GP Trust Layer adds blockchain-backed audit middleware. It does not replace e-GP. It verifies who is acting through mock Bhutan NDI, maps employment identity to a backend role, enforces procurement workflow rules, and records critical actions as gasless Ethereum relayer proofs."
+"Our trust layer adds a backend-enforced control plane: mock Bhutan NDI employment identity, tender-specific assignments, encrypted proposal envelopes, selective key release, threshold approvals, and backend-relayed Ethereum proof events."
 
 Demo:
 
-"First, a procurement officer creates a tender. Then a vendor submits a bid. If finance tries to approve payment before evaluation, the system blocks and logs the attempt. After evaluation approval, finance can approve payment. Finally, the auditor sees the entire timeline, including blocked attempts and blockchain transaction hashes."
+"A tender manifest is committed and approved by threshold. A vendor submits an encrypted proposal package. The old-system simulator stores encrypted references only. Technical evaluators can open technical envelopes after conflict checks, while financial envelopes stay locked until technical evaluation completes. Award approval requires a threshold, and the public portal shows proof hashes without confidential content."
 
 Closing:
 
-"The result is procurement integrity middleware: identity-backed, role-enforced, and audit-ready."
+"This is not replacing Bhutan e-GP. It is a trust layer that makes hidden manipulation and premature access visible and harder to execute."
+
+## Fallback Baseline Flow
+
+If the secure-gateway path is too long for the judging slot, use the old baseline flow:
+
+1. Login as `PROC-001` and create a tender.
+2. Login as `VEND-001` and submit a bid.
+3. Login as `FIN-001` and attempt payment before evaluation.
+4. Login as `EVAL-001` and approve evaluation.
+5. Login as `FIN-001` and approve payment.
+6. Login as `AUD-001` and show blocked plus successful events.
+7. Use `/verify` to show `TAMPERING DETECTED`.
 
 ## Fallbacks
 
 If Sepolia fails:
 
 - Use `BLOCKCHAIN_MODE=mock` or `BLOCKCHAIN_MODE=local`.
-- Explain that the architecture supports Sepolia, but mock/local mode is used for demo reliability.
+- Explain that Sepolia is supported, but mock/local mode is used for demo reliability.
 
 If IPFS fails:
 
 - Use `IPFS_MODE=mock`.
-- Show server-side document hash and mock CID.
+- Show server-side hashes and mock CIDs.
 
 If database reset fails:
 
@@ -308,17 +361,14 @@ If database reset fails:
 - Confirm `DATABASE_URL`.
 - Rerun `npm run demo:reset`.
 
-If frontend demo flow fails:
-
-- Use backend API tests and `/audit` page as proof.
-
 ## Screenshot Checklist
 
-- Mock NDI login page.
-- Procurement Officer dashboard.
-- Tender created with tx hash.
-- Finance blocked before evaluation.
-- Evaluation approved.
-- Payment approved.
-- Auditor timeline with blocked and successful events.
-- Document verification tampering alert.
+- Mock NDI profile list with secure-gateway personas.
+- Manifest page with publication threshold proof.
+- Proposal package page with five encrypted envelopes.
+- Tender workspace old-system simulator records.
+- Committee conflict declaration.
+- KMS page showing financial envelope locked early.
+- Evaluation report finalization.
+- Award threshold approval.
+- Public audit portal with privacy-safe proof trail.

@@ -114,7 +114,7 @@ Frontend unit tests cover:
 
 ## Playwright E2E
 
-The Playwright golden demo flow uses mocked backend API responses to verify the front-end runtime journey:
+The legacy Playwright golden demo flow uses mocked backend API responses to verify the original procurement runtime journey:
 
 1. Login as procurement officer.
 2. Create tender.
@@ -161,10 +161,10 @@ Green readiness means:
 - Frontend build passes.
 - Backend tests pass.
 - Contract tests pass.
-- Playwright golden demo passes.
+- Playwright legacy golden demo passes.
 - Demo reset works against a reachable database.
-- Finance-before-evaluation is blocked.
-- Vendor payment approval is blocked.
-- Auditor timeline shows both blocked and successful events.
-- tx hashes appear for validated actions.
+- The Phase 18 secure-gateway path in [DEMO.md](DEMO.md) can be shown from `TDR-DEMO-001`.
+- Financial envelope access before technical finalization is blocked.
+- Public audit and auditor views show blocked and successful events.
+- tx hashes and public proof labels appear for validated actions.
 - No browser-side blockchain account or signing flow appears.

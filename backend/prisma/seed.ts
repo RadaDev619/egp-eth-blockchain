@@ -17,9 +17,12 @@ const demoProfileIds: Record<string, string> = {
   "PROC-001": "ndi-profile-proc-001",
   "VEND-001": "ndi-profile-vend-001",
   "EVAL-001": "ndi-profile-eval-001",
+  "TEC-001": "ndi-profile-tec-001",
+  "TEC-CHAIR-001": "ndi-profile-tec-chair-001",
   "FIN-001": "ndi-profile-fin-001",
   "APP-001": "ndi-profile-app-001",
   "APP-002": "ndi-profile-app-002",
+  "BANK-001": "ndi-profile-bank-001",
   "AUD-001": "ndi-profile-aud-001"
 };
 
@@ -126,18 +129,18 @@ async function main() {
     {
       key: "tecMember",
       id: "stakeholder-tec-member",
-      userId: demoUserId("EVAL-001"),
+      userId: demoUserId("TEC-001"),
       stakeholderType: "EVALUATION_COMMITTEE",
-      displayName: "Demo Technical Evaluator",
+      displayName: "Demo TEC Member",
       organization: "Tender Evaluation Committee",
-      employeeHash: createEmployeeHash("EVAL-001"),
+      employeeHash: createEmployeeHash("TEC-001"),
       businessIdentifierHash: null,
       publicIdentifier: "TEC-MEMBER-DEMO"
     },
     {
       key: "tecChair",
       id: "stakeholder-tec-chair",
-      userId: null,
+      userId: demoUserId("TEC-CHAIR-001"),
       stakeholderType: "EVALUATION_COMMITTEE",
       displayName: "Demo TEC Chairperson",
       organization: "Tender Evaluation Committee",
@@ -181,7 +184,7 @@ async function main() {
     {
       key: "financialInstitutionOfficer",
       id: "stakeholder-financial-institution-officer",
-      userId: null,
+      userId: demoUserId("BANK-001"),
       stakeholderType: "FINANCIAL_INSTITUTION",
       displayName: "Demo Financial Institution Officer",
       organization: "Demo Bank Ltd",
@@ -252,7 +255,7 @@ async function main() {
     where: { tenderCode: demoTenderCode },
     update: {
       agency: "Ministry of Finance",
-      currentState: "CREATED",
+      currentState: "TECHNICAL_EVALUATION",
       currentVersion: 1,
       createdByEmployeeHash: procurementOfficerHash,
       createdByRole: "PROCUREMENT_OFFICER",
@@ -262,7 +265,7 @@ async function main() {
       id: demoTenderId,
       tenderCode: demoTenderCode,
       agency: "Ministry of Finance",
-      currentState: "CREATED",
+      currentState: "TECHNICAL_EVALUATION",
       currentVersion: 1,
       createdByEmployeeHash: procurementOfficerHash,
       createdByRole: "PROCUREMENT_OFFICER",
@@ -632,12 +635,17 @@ async function main() {
     },
     {
       envelopeType: "TECHNICAL",
+      allowedRole: "TEC_MEMBER",
+      requiredTenderState: "TECHNICAL_EVALUATION"
+    },
+    {
+      envelopeType: "TECHNICAL",
       allowedRole: "TEC_CHAIR",
       requiredTenderState: "TECHNICAL_EVALUATION"
     },
     {
       envelopeType: "FINANCIAL",
-      allowedRole: "TEC_CHAIR",
+      allowedRole: "FINANCIAL_INSTITUTION_OFFICER",
       requiredTenderState: "FINANCIAL_EVALUATION"
     },
     {
@@ -684,7 +692,7 @@ async function main() {
     where: {
       tenderId: tender.id,
       envelopeType: "TECHNICAL",
-      allowedRole: "TEC_CHAIR",
+      allowedRole: "TEC_MEMBER",
       requiredTenderState: "TECHNICAL_EVALUATION"
     }
   });
@@ -695,13 +703,13 @@ async function main() {
       tenderId: tender.id,
       proposalEnvelopeId: technicalEnvelopeId,
       policyId: technicalPolicy.id,
-      requesterStakeholderId: requireStakeholder("tecChair"),
-      requesterEmployeeHash: createEmployeeHash("TEC-CHAIR-001"),
-      requesterRole: "TEC_CHAIR",
+      requesterStakeholderId: requireStakeholder("tecMember"),
+      requesterEmployeeHash: createEmployeeHash("TEC-001"),
+      requesterRole: "TEC_MEMBER",
       requestedTenderState: "TECHNICAL_EVALUATION",
       status: "APPROVED",
       rejectionReason: null,
-      keyMaterialReference: "kms://mock/releases/technical-envelope-demo",
+      keyMaterialReference: "kms://mock/releases/technical-envelope-tec-member-demo",
       releasedAt: new Date()
     },
     create: {
@@ -709,12 +717,12 @@ async function main() {
       tenderId: tender.id,
       proposalEnvelopeId: technicalEnvelopeId,
       policyId: technicalPolicy.id,
-      requesterStakeholderId: requireStakeholder("tecChair"),
-      requesterEmployeeHash: createEmployeeHash("TEC-CHAIR-001"),
-      requesterRole: "TEC_CHAIR",
+      requesterStakeholderId: requireStakeholder("tecMember"),
+      requesterEmployeeHash: createEmployeeHash("TEC-001"),
+      requesterRole: "TEC_MEMBER",
       requestedTenderState: "TECHNICAL_EVALUATION",
       status: "APPROVED",
-      keyMaterialReference: "kms://mock/releases/technical-envelope-demo",
+      keyMaterialReference: "kms://mock/releases/technical-envelope-tec-member-demo",
       releasedAt: new Date()
     }
   });
@@ -722,7 +730,7 @@ async function main() {
   const conflictDeclarations = [
     {
       stakeholderKey: "tecMember",
-      actorEmployeeHash: createEmployeeHash("EVAL-001"),
+      actorEmployeeHash: createEmployeeHash("TEC-001"),
       actorRole: "TEC_MEMBER",
       declarationStatus: "DECLARED_NO_CONFLICT"
     },
@@ -870,11 +878,46 @@ async function main() {
       publicLabel: "Vendor proposal package commitment"
     },
     {
+      id: "public-proof-demo-technical-envelope",
+      proofType: "ENVELOPE_COMMITMENT",
+      proofHash: stableHash(`${demoTenderCode}:public:technical-envelope`),
+      sourceTxHash: "0xmockseedtechenvelope000000000000000000000000000000000000000",
+      publicLabel: "Technical envelope commitment"
+    },
+    {
+      id: "public-proof-demo-financial-envelope",
+      proofType: "ENVELOPE_COMMITMENT",
+      proofHash: stableHash(`${demoTenderCode}:public:financial-envelope`),
+      sourceTxHash: "0xmockseedfinenvelope0000000000000000000000000000000000000000",
+      publicLabel: "Financial envelope commitment"
+    },
+    {
+      id: "public-proof-demo-technical-key-release",
+      proofType: "KEY_RELEASE",
+      proofHash: stableHash(`${demoTenderCode}:public:key-release:technical`),
+      sourceTxHash: "0xmockseedkeyrelease0000000000000000000000000000000000000000",
+      publicLabel: "Technical key release proof"
+    },
+    {
+      id: "public-proof-demo-evaluation-report",
+      proofType: "EVALUATION_REPORT",
+      proofHash: stableHash(`${demoTenderCode}:public:evaluation-report`),
+      sourceTxHash: "0xmockseedevaluationreport000000000000000000000000000000000000",
+      publicLabel: "Evaluation report proof"
+    },
+    {
       id: "public-proof-demo-award-recommendation",
       proofType: "AWARD_RECOMMENDATION",
       proofHash: stableHash(`${demoTenderCode}:public:award-recommendation`),
       sourceTxHash: "0xmockseedawardrecommend00000000000000000000000000000000000000",
       publicLabel: "Award recommendation committed"
+    },
+    {
+      id: "public-proof-demo-award-approval",
+      proofType: "AWARD_APPROVAL",
+      proofHash: stableHash(`${demoTenderCode}:public:award-approval:approving-officer`),
+      sourceTxHash: "0xmockseedawardapproval000000000000000000000000000000000000000",
+      publicLabel: "Award approval proof"
     }
   ] as const;
 

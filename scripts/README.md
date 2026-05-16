@@ -12,9 +12,9 @@ npm run demo:reset
 
 `db:up` starts a local PostgreSQL 16 container using `docker-compose.yml`.
 
-`demo:seed` loads deterministic mock NDI personas, role permissions, `TDR-DEMO-001`, and sample blocked audit evidence.
+`demo:seed` loads deterministic mock NDI personas, role permissions, `TDR-DEMO-001`, stakeholder assignments, encrypted proposal envelope metadata, old-system simulator references, public proof labels, and sample blocked-access evidence.
 
-`demo:reset` force-resets the local Prisma database with `prisma db push --force-reset`, then runs the same seed. Use it immediately before judging to return the app to a known mock-mode baseline.
+`demo:reset` force-resets the local Prisma database with `prisma db push --force-reset`, then runs the same seed. Use it immediately before judging to return the app to the secure proposal confidentiality demo baseline.
 
 PostgreSQL must be running before either command can write demo data.
 

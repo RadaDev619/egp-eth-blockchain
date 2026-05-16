@@ -35,6 +35,22 @@ export const demoProfiles: DemoNdiProfile[] = [
     role: "EVALUATOR"
   },
   {
+    employmentId: "TEC-001",
+    holderDID: "did:key:mock-tec-member",
+    employer: "Tender Evaluation Committee",
+    position: "TEC Member",
+    employmentType: "Committee",
+    role: "TEC_MEMBER"
+  },
+  {
+    employmentId: "TEC-CHAIR-001",
+    holderDID: "did:key:mock-tec-chair",
+    employer: "Tender Evaluation Committee",
+    position: "TEC Chairperson",
+    employmentType: "Committee",
+    role: "TEC_CHAIR"
+  },
+  {
     employmentId: "FIN-001",
     holderDID: "did:key:mock-finance-officer",
     employer: "Ministry of Finance",
@@ -57,6 +73,14 @@ export const demoProfiles: DemoNdiProfile[] = [
     position: "Second Approving Officer",
     employmentType: "Regular",
     role: "APPROVING_OFFICER"
+  },
+  {
+    employmentId: "BANK-001",
+    holderDID: "did:key:mock-financial-institution-officer",
+    employer: "Demo Bank Ltd",
+    position: "Financial Institution Officer",
+    employmentType: "Regular",
+    role: "FINANCIAL_INSTITUTION_OFFICER"
   },
   {
     employmentId: "AUD-001",

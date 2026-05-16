@@ -74,6 +74,11 @@ Demo personas:
 
 - `PROC-001`: Procurement Officer, Ministry of Finance, role `PROCUREMENT_OFFICER`
 - `VEND-001`: Vendor Representative, Demo Vendor Pvt Ltd, role `VENDOR`
+- `APP-001`: Approving Officer, Ministry of Finance, role `APPROVING_OFFICER`
+- `APP-002`: Second Approving Officer, Ministry of Finance, role `APPROVING_OFFICER`
+- `TEC-001`: TEC Member, Technical Evaluation Committee, role `TEC_MEMBER`
+- `TEC-CHAIR-001`: TEC Chairperson, Technical Evaluation Committee, role `TEC_CHAIR`
+- `BANK-001`: Financial Institution Officer, Demo Bank, role `FINANCIAL_INSTITUTION_OFFICER`
 - `EVAL-001`: Technical Evaluator, Evaluation Committee, role `EVALUATOR`
 - `FIN-001`: Finance Officer, Ministry of Finance, role `FINANCE_OFFICER`
 - `AUD-001`: Auditor, Royal Audit Authority, role `AUDITOR`
@@ -171,7 +176,7 @@ Stop the local demo database when finished:
 npm run db:down
 ```
 
-`demo:reset` force-resets the Prisma schema and reseeds `TDR-DEMO-001`, the five demo personas, role permissions, and sample blocked audit events.
+`demo:reset` force-resets the Prisma schema and reseeds `TDR-DEMO-001`, mock NDI personas, role permissions, stakeholder assignments, manifest proofs, encrypted proposal envelopes, old-system simulator references, and sample blocked-access evidence.
 
 ## Run The App
 
@@ -349,17 +354,17 @@ Use placeholders only in committed files.
 
 ## Demo Workflow
 
-1. Login as `PROC-001` and create a tender.
-2. Confirm state `CREATED`, version `v1`, document hash, mock CID, and backend relayer tx hash.
-3. Login as `VEND-001` and submit a bid.
-4. Confirm state `BID_SUBMITTED`.
-5. Login as `FIN-001` and attempt payment approval before evaluation. It must be blocked and logged as `INVALID_TRANSITION_ATTEMPTED`.
-6. Login as `EVAL-001` and approve evaluation.
-7. Confirm state `EVALUATION_APPROVED`.
-8. Login as `FIN-001` and approve payment.
-9. Confirm state `PAYMENT_APPROVED` and relayer proof.
-10. Login as `VEND-001` and attempt payment approval. It must be blocked and logged as `UNAUTHORIZED_ACTION_ATTEMPTED`.
-11. Login as `AUD-001` and show the audit timeline with successful events, blocked attempts, employee hashes, state changes, blockchain status, and tx hashes.
+1. Run `npm run demo:reset` so `TDR-DEMO-001` starts from the secure-gateway judging baseline.
+2. Login as `PROC-001` and show the tender manifest, version hash, document hash, old e-GP reference, and backend relayer proof.
+3. Login as `VEND-001` and show that the submitted proposal package is committed as encrypted technical and financial envelopes, not readable frontend content.
+4. Login as `TEC-001`, declare conflict status, and request the technical envelope key release.
+5. Confirm technical access succeeds only for the committee role and produces key-release audit evidence.
+6. Login as `BANK-001` before technical finalization and show financial key release is blocked.
+7. Login as `TEC-CHAIR-001`, finalize the evaluation report, and show the report hash/proof.
+8. Login as `BANK-001` again and show financial envelope access is now allowed after technical completion.
+9. Login as `TEC-CHAIR-001` and submit the award recommendation.
+10. Login as `APP-002` and approve the award so the threshold is met.
+11. Open `/public-audit` or login as `AUD-001` and show successful events, blocked attempts, employee-hash short forms, timestamps, tx hashes, and public proof labels.
 12. Use `/verify` to upload a changed PDF and show `TAMPERING DETECTED`.
 
 See [docs/DEMO.md](docs/DEMO.md).
