@@ -103,7 +103,7 @@ describe("procurementStateMachine", () => {
         actorEmployeeHash,
         currentState: TenderState.PUBLISHED
       })
-    ).toMatchObject({ allowed: true, toState: TenderState.CLOSED });
+    ).toMatchObject({ allowed: true, toState: TenderState.TECHNICAL_EVALUATION });
 
     expect(
       canTransition({
@@ -403,6 +403,6 @@ describe("procurementStateMachine", () => {
       ProcurementAction.SUBMIT_PROPOSAL_PACKAGE,
       ProcurementAction.COMMIT_PROPOSAL_ENVELOPE
     ]);
-    expect(getNextState(ProcurementAction.CLOSE_TENDER, TenderState.OPEN_FOR_PROPOSALS)).toBe(TenderState.CLOSED);
+    expect(getNextState(ProcurementAction.CLOSE_TENDER, TenderState.OPEN_FOR_PROPOSALS)).toBe(TenderState.TECHNICAL_EVALUATION);
   });
 });

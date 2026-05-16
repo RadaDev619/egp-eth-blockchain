@@ -111,6 +111,7 @@ export const rolePermissions: Record<Role, Permission[]> = {
     permissions.DECLARE_CONFLICT_OF_INTEREST,
     permissions.REQUEST_KEY_RELEASE,
     permissions.RELEASE_ENVELOPE_KEY,
+    permissions.SUBMIT_EVALUATION_REPORT,
     permissions.VIEW_BLOCKCHAIN_PROOFS
   ]
 };

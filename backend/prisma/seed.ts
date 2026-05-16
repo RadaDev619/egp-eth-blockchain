@@ -18,11 +18,14 @@ const demoProfileIds: Record<string, string> = {
   "VEND-001": "ndi-profile-vend-001",
   "EVAL-001": "ndi-profile-eval-001",
   "TEC-001": "ndi-profile-tec-001",
+  "TEC-002": "ndi-profile-tec-002",
   "TEC-CHAIR-001": "ndi-profile-tec-chair-001",
   "FIN-001": "ndi-profile-fin-001",
   "APP-001": "ndi-profile-app-001",
   "APP-002": "ndi-profile-app-002",
+  "APP-003": "ndi-profile-app-003",
   "BANK-001": "ndi-profile-bank-001",
+  "FINCOM-002": "ndi-profile-fincom-002",
   "AUD-001": "ndi-profile-aud-001"
 };
 
@@ -131,11 +134,22 @@ async function main() {
       id: "stakeholder-tec-member",
       userId: demoUserId("TEC-001"),
       stakeholderType: "EVALUATION_COMMITTEE",
-      displayName: "Demo TEC Member",
+      displayName: "Demo Technical Committee Member 1",
       organization: "Tender Evaluation Committee",
       employeeHash: createEmployeeHash("TEC-001"),
       businessIdentifierHash: null,
       publicIdentifier: "TEC-MEMBER-DEMO"
+    },
+    {
+      key: "tecMemberTwo",
+      id: "stakeholder-tec-member-two",
+      userId: demoUserId("TEC-002"),
+      stakeholderType: "EVALUATION_COMMITTEE",
+      displayName: "Demo Technical Committee Member 2",
+      organization: "Tender Evaluation Committee",
+      employeeHash: createEmployeeHash("TEC-002"),
+      businessIdentifierHash: null,
+      publicIdentifier: "TEC-MEMBER-DEMO-2"
     },
     {
       key: "tecChair",
@@ -153,7 +167,7 @@ async function main() {
       id: "stakeholder-approving-officer",
       userId: demoUserId("APP-001"),
       stakeholderType: "PROCURING_AGENCY",
-      displayName: "Demo Approving Officer",
+      displayName: "Demo Award Team Member 1",
       organization: "Ministry of Finance",
       employeeHash: createEmployeeHash("APP-001"),
       businessIdentifierHash: null,
@@ -164,11 +178,22 @@ async function main() {
       id: "stakeholder-second-approving-officer",
       userId: demoUserId("APP-002"),
       stakeholderType: "PROCURING_AGENCY",
-      displayName: "Demo Second Approving Officer",
+      displayName: "Demo Award Team Member 2",
       organization: "Ministry of Finance",
       employeeHash: createEmployeeHash("APP-002"),
       businessIdentifierHash: null,
       publicIdentifier: "APPROVER-DEMO-2"
+    },
+    {
+      key: "thirdApprovingOfficer",
+      id: "stakeholder-third-approving-officer",
+      userId: demoUserId("APP-003"),
+      stakeholderType: "PROCURING_AGENCY",
+      displayName: "Demo Award Team Member 3",
+      organization: "Ministry of Finance",
+      employeeHash: createEmployeeHash("APP-003"),
+      businessIdentifierHash: null,
+      publicIdentifier: "APPROVER-DEMO-3"
     },
     {
       key: "financeOfficer",
@@ -186,11 +211,22 @@ async function main() {
       id: "stakeholder-financial-institution-officer",
       userId: demoUserId("BANK-001"),
       stakeholderType: "FINANCIAL_INSTITUTION",
-      displayName: "Demo Financial Institution Officer",
-      organization: "Demo Bank Ltd",
+      displayName: "Demo Financial Committee Member 1",
+      organization: "Tender Financial Committee",
       employeeHash: createEmployeeHash("BANK-001"),
-      businessIdentifierHash: stableHash("demo-bank-ltd"),
-      publicIdentifier: "BANK-DEMO"
+      businessIdentifierHash: stableHash("tender-financial-committee"),
+      publicIdentifier: "FIN-COM-DEMO-1"
+    },
+    {
+      key: "financialInstitutionOfficerTwo",
+      id: "stakeholder-financial-institution-officer-two",
+      userId: demoUserId("FINCOM-002"),
+      stakeholderType: "FINANCIAL_INSTITUTION",
+      displayName: "Demo Financial Committee Member 2",
+      organization: "Tender Financial Committee",
+      employeeHash: createEmployeeHash("FINCOM-002"),
+      businessIdentifierHash: stableHash("tender-financial-committee"),
+      publicIdentifier: "FIN-COM-DEMO-2"
     },
     {
       key: "auditor",
@@ -309,11 +345,14 @@ async function main() {
     { stakeholderKey: "vendor", role: "VENDOR" },
     { stakeholderKey: "tecMember", role: "EVALUATOR" },
     { stakeholderKey: "tecMember", role: "TEC_MEMBER" },
+    { stakeholderKey: "tecMemberTwo", role: "TEC_MEMBER" },
     { stakeholderKey: "tecChair", role: "TEC_CHAIR" },
     { stakeholderKey: "approvingOfficer", role: "APPROVING_OFFICER" },
     { stakeholderKey: "secondApprovingOfficer", role: "APPROVING_OFFICER" },
+    { stakeholderKey: "thirdApprovingOfficer", role: "APPROVING_OFFICER" },
     { stakeholderKey: "financeOfficer", role: "FINANCE_OFFICER" },
     { stakeholderKey: "financialInstitutionOfficer", role: "FINANCIAL_INSTITUTION_OFFICER" },
+    { stakeholderKey: "financialInstitutionOfficerTwo", role: "FINANCIAL_INSTITUTION_OFFICER" },
     { stakeholderKey: "auditor", role: "AUDITOR" }
   ] as const;
 
@@ -364,7 +403,7 @@ async function main() {
       documentsHash: demoDocumentHash,
       approvalPolicy: {
         publicationThreshold: 2,
-        awardApprovalThreshold: 2,
+        awardApprovalThreshold: 3,
         requiredRoles: ["PROCUREMENT_OFFICER", "APPROVING_OFFICER"],
         envelopeOpeningOrder: ["ELIGIBILITY", "TECHNICAL", "FINANCIAL"]
       },
@@ -385,7 +424,7 @@ async function main() {
       documentsHash: demoDocumentHash,
       approvalPolicy: {
         publicationThreshold: 2,
-        awardApprovalThreshold: 2,
+        awardApprovalThreshold: 3,
         requiredRoles: ["PROCUREMENT_OFFICER", "APPROVING_OFFICER"],
         envelopeOpeningOrder: ["ELIGIBILITY", "TECHNICAL", "FINANCIAL"]
       },
@@ -745,9 +784,27 @@ async function main() {
       declarationStatus: "DECLARED_NO_CONFLICT"
     },
     {
+      stakeholderKey: "tecMemberTwo",
+      actorEmployeeHash: createEmployeeHash("TEC-002"),
+      actorRole: "TEC_MEMBER",
+      declarationStatus: "DECLARED_NO_CONFLICT"
+    },
+    {
       stakeholderKey: "tecChair",
       actorEmployeeHash: createEmployeeHash("TEC-CHAIR-001"),
       actorRole: "TEC_CHAIR",
+      declarationStatus: "DECLARED_NO_CONFLICT"
+    },
+    {
+      stakeholderKey: "financialInstitutionOfficer",
+      actorEmployeeHash: createEmployeeHash("BANK-001"),
+      actorRole: "FINANCIAL_INSTITUTION_OFFICER",
+      declarationStatus: "DECLARED_NO_CONFLICT"
+    },
+    {
+      stakeholderKey: "financialInstitutionOfficerTwo",
+      actorEmployeeHash: createEmployeeHash("FINCOM-002"),
+      actorRole: "FINANCIAL_INSTITUTION_OFFICER",
       declarationStatus: "DECLARED_NO_CONFLICT"
     }
   ] as const;

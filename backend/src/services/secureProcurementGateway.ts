@@ -126,7 +126,7 @@ const secureGatewayPolicies = {
   SUBMIT_EVALUATION_REPORT: {
     action: SecureGatewayAction.SUBMIT_EVALUATION_REPORT,
     permission: permissions.SUBMIT_EVALUATION_REPORT,
-    allowedRoles: ["TEC_MEMBER", "TEC_CHAIR"],
+    allowedRoles: ["TEC_MEMBER", "TEC_CHAIR", "FINANCIAL_INSTITUTION_OFFICER"],
     allowedStates: ["TECHNICAL_EVALUATION", "FINANCIAL_EVALUATION"],
     requireAssignment: true,
     requiredHashFields: ["reportHash"]

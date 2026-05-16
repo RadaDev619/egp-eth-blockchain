@@ -138,7 +138,7 @@ export default function KmsRequestsPage() {
           <p className="text-sm font-semibold text-emerald-800">Key Custody</p>
           <h1 className="mt-2 text-3xl font-semibold text-slate-950">Envelope Key Release Requests</h1>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
-            Encrypted proposal envelopes remain locked until the backend validates role, tender state, and release policy.
+            Selective visibility is enforced here: technical members can only open technical-stage envelopes, and financial members can only open financial-stage envelopes.
           </p>
         </section>
 
@@ -207,7 +207,7 @@ export default function KmsRequestsPage() {
             <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
               <div className="flex items-center gap-2">
                 <LockKeyhole className="h-4 w-4 text-slate-600" aria-hidden="true" />
-                <h2 className="text-base font-semibold text-slate-950">Encrypted Envelopes</h2>
+                <h2 className="text-base font-semibold text-slate-950">Visible Encrypted Envelopes</h2>
               </div>
               <div className="mt-4 grid gap-4 lg:grid-cols-2">
                 {envelopes.length === 0 ? (
@@ -257,7 +257,7 @@ export default function KmsRequestsPage() {
                           </p>
                           {request.keyMaterialReference ? (
                             <p className="mt-2 break-all text-xs font-medium text-slate-700">
-                              MVP key reference recorded: {request.keyMaterialReference}
+                              Private key reference released by backend KMS: {request.keyMaterialReference}
                             </p>
                           ) : null}
                         </div>

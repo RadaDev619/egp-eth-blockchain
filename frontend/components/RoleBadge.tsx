@@ -6,10 +6,10 @@ const roleLabels: Record<Role, string> = {
   EVALUATOR: "Evaluator",
   FINANCE_OFFICER: "Finance Officer",
   AUDITOR: "Auditor",
-  TEC_MEMBER: "TEC Member",
+  TEC_MEMBER: "Technical Committee",
   TEC_CHAIR: "TEC Chair",
-  APPROVING_OFFICER: "Approving Officer",
-  FINANCIAL_INSTITUTION_OFFICER: "Financial Institution"
+  APPROVING_OFFICER: "Award Team",
+  FINANCIAL_INSTITUTION_OFFICER: "Financial Committee"
 };
 
 const roleStyles: Record<Role, string> = {

@@ -209,6 +209,11 @@ export const tenderApi = {
     request<{ tender: Tender }>("/tender/create", {
       method: "POST",
       body: createTenderFormData(input)
+    }),
+  close: (input: { tenderId: string; comments?: string }) =>
+    request<{ tender: Tender }>("/tender/close", {
+      method: "POST",
+      body: JSON.stringify(input)
     })
 };
 

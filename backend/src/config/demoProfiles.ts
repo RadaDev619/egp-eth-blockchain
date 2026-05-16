@@ -38,7 +38,15 @@ export const demoProfiles: DemoNdiProfile[] = [
     employmentId: "TEC-001",
     holderDID: "did:key:mock-tec-member",
     employer: "Tender Evaluation Committee",
-    position: "TEC Member",
+    position: "Technical Committee Member 1",
+    employmentType: "Committee",
+    role: "TEC_MEMBER"
+  },
+  {
+    employmentId: "TEC-002",
+    holderDID: "did:key:mock-tec-member-two",
+    employer: "Tender Evaluation Committee",
+    position: "Technical Committee Member 2",
     employmentType: "Committee",
     role: "TEC_MEMBER"
   },
@@ -62,7 +70,7 @@ export const demoProfiles: DemoNdiProfile[] = [
     employmentId: "APP-001",
     holderDID: "did:key:mock-approving-officer",
     employer: "Ministry of Finance",
-    position: "Approving Officer",
+    position: "Award Team Member 1",
     employmentType: "Regular",
     role: "APPROVING_OFFICER"
   },
@@ -70,15 +78,31 @@ export const demoProfiles: DemoNdiProfile[] = [
     employmentId: "APP-002",
     holderDID: "did:key:mock-approving-officer-two",
     employer: "Ministry of Finance",
-    position: "Second Approving Officer",
+    position: "Award Team Member 2",
+    employmentType: "Regular",
+    role: "APPROVING_OFFICER"
+  },
+  {
+    employmentId: "APP-003",
+    holderDID: "did:key:mock-approving-officer-three",
+    employer: "Ministry of Finance",
+    position: "Award Team Member 3",
     employmentType: "Regular",
     role: "APPROVING_OFFICER"
   },
   {
     employmentId: "BANK-001",
     holderDID: "did:key:mock-financial-institution-officer",
-    employer: "Demo Bank Ltd",
-    position: "Financial Institution Officer",
+    employer: "Tender Financial Committee",
+    position: "Financial Committee Member 1",
+    employmentType: "Committee",
+    role: "FINANCIAL_INSTITUTION_OFFICER"
+  },
+  {
+    employmentId: "FINCOM-002",
+    holderDID: "did:key:mock-financial-committee-two",
+    employer: "Tender Financial Committee",
+    position: "Financial Committee Member 2",
     employmentType: "Regular",
     role: "FINANCIAL_INSTITUTION_OFFICER"
   },

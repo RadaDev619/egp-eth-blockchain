@@ -183,7 +183,7 @@ export const allowedTransitions = [
   {
     action: ProcurementAction.CLOSE_TENDER,
     from: [TenderState.PUBLISHED, TenderState.OPEN_FOR_PROPOSALS],
-    to: TenderState.CLOSED,
+    to: TenderState.TECHNICAL_EVALUATION,
     role: "PROCUREMENT_OFFICER",
     permission: permissions.CLOSE_TENDER,
     mutatesState: true
@@ -281,6 +281,14 @@ export const allowedTransitions = [
     from: [TenderState.FINANCIAL_EVALUATION],
     to: "UNCHANGED",
     role: "TEC_CHAIR",
+    permission: permissions.SUBMIT_EVALUATION_REPORT,
+    mutatesState: true
+  },
+  {
+    action: ProcurementAction.SUBMIT_EVALUATION_REPORT,
+    from: [TenderState.FINANCIAL_EVALUATION],
+    to: "UNCHANGED",
+    role: "FINANCIAL_INSTITUTION_OFFICER",
     permission: permissions.SUBMIT_EVALUATION_REPORT,
     mutatesState: true
   },

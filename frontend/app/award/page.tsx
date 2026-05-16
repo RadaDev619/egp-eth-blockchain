@@ -169,9 +169,9 @@ export default function AwardPage() {
       <div className="mx-auto max-w-7xl space-y-6">
         <section>
           <p className="text-sm font-semibold text-emerald-800">Award Control</p>
-          <h1 className="mt-2 text-3xl font-semibold text-slate-950">Award Recommendation And Approval</h1>
+          <h1 className="mt-2 text-3xl font-semibold text-slate-950">Award Team Voting</h1>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
-            Award decisions are recorded as hashes and threshold approvals, with contract documents committed as public audit proofs.
+            The committee recommendation is sent to three award-team members. Each member records an individual vote hash before the winner is approved.
           </p>
         </section>
 
@@ -213,7 +213,7 @@ export default function AwardPage() {
               <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
                 <p className="text-sm font-semibold text-slate-500">Award Threshold</p>
                 <p className="mt-2 text-3xl font-semibold text-slate-950">{workspace.awardApprovalThreshold}</p>
-                <p className="mt-1 text-xs text-slate-600">Approvals required before award approval.</p>
+                <p className="mt-1 text-xs text-slate-600">Individual award-team votes required before winner declaration.</p>
               </div>
               <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
                 <p className="text-sm font-semibold text-slate-500">Public Contract Proofs</p>
@@ -257,7 +257,7 @@ export default function AwardPage() {
               <form onSubmit={(event) => void approveRecommendation(event)} className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
                 <div className="flex items-center gap-2">
                   <FileSignature className="h-4 w-4 text-slate-600" aria-hidden="true" />
-                  <h2 className="text-base font-semibold text-slate-950">Approve Recommendation</h2>
+                  <h2 className="text-base font-semibold text-slate-950">Vote On Recommendation</h2>
                 </div>
                 <div className="mt-4 grid gap-4">
                   <label className="grid gap-2">
@@ -276,7 +276,7 @@ export default function AwardPage() {
                     </select>
                   </label>
                   <label className="grid gap-2">
-                    <span className="text-sm font-semibold text-slate-800">Signature Hash</span>
+                    <span className="text-sm font-semibold text-slate-800">Vote Signature Hash</span>
                     <input
                       value={signatureHash}
                       onChange={(event) => setSignatureHash(event.target.value)}
@@ -295,7 +295,7 @@ export default function AwardPage() {
                 </div>
                 <div className="mt-5 flex justify-end">
                   <LoadingButton type="submit" loading={approving} disabled={!canApprove || !recommendationForApproval}>
-                    Approve
+                    Record Vote
                   </LoadingButton>
                 </div>
               </form>

@@ -14,14 +14,14 @@ import { BlockchainProofCard } from "@/components/BlockchainProofCard";
 
 const roleFocus: Record<Role, { title: string; summary: string; primaryAction: string }> = {
   PROCUREMENT_OFFICER: {
-    title: "Tender Control",
-    summary: "Create tender records and amendments as append-only procurement versions.",
-    primaryAction: "Create Tender"
+    title: "Tender Setup",
+    summary: "Create the tender and close proposal submission when the deadline is over.",
+    primaryAction: "Create Or Close Tender"
   },
   VENDOR: {
-    title: "Bid Submission",
-    summary: "Submit bids against eligible tender records.",
-    primaryAction: "Submit Bid"
+    title: "Encrypted Proposal",
+    summary: "Submit encrypted eligibility, technical, financial, and supporting envelopes.",
+    primaryAction: "Submit Proposal"
   },
   EVALUATOR: {
     title: "Evaluation Approval",
@@ -40,23 +40,23 @@ const roleFocus: Record<Role, { title: string; summary: string; primaryAction: s
   },
   TEC_MEMBER: {
     title: "Technical Committee",
-    summary: "Declare conflict status and review assigned technical evidence.",
-    primaryAction: "Review Committee"
+    summary: "Request the technical envelope key after proposal submission closes and submit an individual signed report.",
+    primaryAction: "Technical Review"
   },
   TEC_CHAIR: {
     title: "Committee Chair",
-    summary: "Finalize evaluation reports and submit award recommendation hashes.",
-    primaryAction: "Finalize Evaluation"
+    summary: "Release technical keys, finalize committee reports, and send the recommendation to the award team.",
+    primaryAction: "Finalize Report"
   },
   APPROVING_OFFICER: {
-    title: "Threshold Approval",
-    summary: "Approve tender publication and award decisions under threshold policy.",
-    primaryAction: "Approve Award"
+    title: "Award Team Vote",
+    summary: "Vote individually on the committee recommendation. Three approval proofs are required.",
+    primaryAction: "Vote On Award"
   },
   FINANCIAL_INSTITUTION_OFFICER: {
-    title: "Financial Key Release",
-    summary: "Release permitted envelope keys after policy checks pass.",
-    primaryAction: "KMS Requests"
+    title: "Financial Committee",
+    summary: "Open only the financial envelope during the financial stage and submit a financial report hash.",
+    primaryAction: "Financial Review"
   }
 };
 

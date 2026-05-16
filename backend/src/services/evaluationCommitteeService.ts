@@ -257,7 +257,7 @@ export async function getCommitteeDashboard(tenderId: string, user: Authenticate
     prisma.tenderRoleAssignment.findMany({
       where: {
         tenderId: tender.id,
-        role: { in: ["TEC_MEMBER", "TEC_CHAIR"] },
+        role: { in: ["TEC_MEMBER", "TEC_CHAIR", "FINANCIAL_INSTITUTION_OFFICER"] },
         status: "ACTIVE"
       },
       orderBy: [{ role: "asc" }, { assignedAt: "asc" }],

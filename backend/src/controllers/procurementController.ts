@@ -4,6 +4,7 @@ import {
   amendTender,
   approveEvaluation,
   approvePayment,
+  closeTender,
   createTender,
   getTender,
   ingestEgpEvent,
@@ -43,6 +44,11 @@ const bidSubmitSchema = z.object({
 });
 
 const approvalSchema = z.object({
+  tenderId: z.string().min(1),
+  comments: z.string().max(1000).optional()
+});
+
+const closeTenderSchema = z.object({
   tenderId: z.string().min(1),
   comments: z.string().max(1000).optional()
 });
@@ -138,6 +144,13 @@ export const submitBidController = asyncHandler(async (req: Request, res: Respon
   const tender = await submitBid(payload, requireUser(req), requestContext(req));
 
   res.status(201).json({ tender });
+});
+
+export const closeTenderController = asyncHandler(async (req: Request, res: Response) => {
+  const payload = closeTenderSchema.parse(req.body);
+  const tender = await closeTender(payload, requireUser(req), requestContext(req));
+
+  res.json({ tender });
 });
 
 export const approveEvaluationController = asyncHandler(async (req: Request, res: Response) => {

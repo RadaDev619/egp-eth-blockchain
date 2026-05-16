@@ -1,5 +1,6 @@
 import type { Prisma } from "@prisma/client";
 import {
+  appendAuditEvent,
   actorAuditFields,
   logBidSubmitted,
   logEvaluationApproved,
@@ -16,6 +17,7 @@ import {
   recordBidSubmitted,
   recordEvaluationApproved,
   recordPaymentApproved,
+  recordTenderClosed,
   recordTenderCreated,
   recordTenderVersionCreated,
   type RelayerTransactionResult
@@ -24,6 +26,7 @@ import { prisma } from "../utils/prisma.js";
 import { AppError, AuthorizationError, InvalidTransitionError, NotFoundError, ValidationError } from "../utils/errors.js";
 import type { AuthenticatedUser } from "../types/domain.js";
 import type { HashedPdfDocument } from "../utils/hashDocument.js";
+import { sha256Hex } from "../utils/hash.js";
 
 type ProcurementWriteClient = typeof prisma | Prisma.TransactionClient;
 
@@ -61,6 +64,11 @@ type BidSubmitInput = {
 };
 
 type ApprovalInput = {
+  tenderId: string;
+  comments?: string | null;
+};
+
+type CloseTenderInput = {
   tenderId: string;
   comments?: string | null;
 };
@@ -586,6 +594,87 @@ export async function submitBid(input: BidSubmitInput, user: AuthenticatedUser, 
         ...relayerAuditFields(relayerResult),
         metadata: {
           bidId: bid.id
+        }
+      },
+      tx
+    );
+
+    return updatedTender;
+  });
+}
+
+export async function closeTender(input: CloseTenderInput, user: AuthenticatedUser, context: RequestContext = {}) {
+  const tender = await findTenderOrThrow(input.tenderId);
+  const transition = await ensureAllowedTransition({
+    user,
+    action: ProcurementAction.CLOSE_TENDER,
+    currentState: tender.currentState,
+    tenderId: tender.id,
+    context,
+    metadata: {
+      comments: input.comments ?? null
+    }
+  });
+  const closureHash = `0x${sha256Hex(`close:${tender.id}:${tender.currentState}:${user.employeeHash}`)}`;
+  const relayerResult = await recordTenderClosed({
+    tenderId: tender.id,
+    actorEmployeeHash: user.employeeHash,
+    actorRole: user.role,
+    fromState: transition.fromState,
+    toState: transition.toState,
+    closureHash,
+    metadata: {
+      comments: input.comments ?? null
+    }
+  });
+  assertRelayerDidNotFail(relayerResult);
+
+  return prisma.$transaction(async (tx) => {
+    const updatedTender = await tx.tender.update({
+      where: { id: tender.id },
+      data: { currentState: transition.toState ?? "TECHNICAL_EVALUATION" },
+      include: { versions: true, bids: true, approvals: true }
+    });
+
+    await createAllowedTransition(tx, {
+      user,
+      action: "CLOSE_TENDER",
+      tenderId: tender.id,
+      result: transition,
+      txHash: relayerResult.txHash,
+      metadata: {
+        closureHash,
+        comments: input.comments ?? null
+      }
+    });
+    await createBlockchainTransactionRecord(tx, {
+      ...blockchainTransactionData({
+        relayerResult,
+        action: "TENDER_CLOSED",
+        resourceType: "TENDER",
+        resourceId: tender.id,
+        tenderId: tender.id
+      })
+    });
+    await appendAuditEvent(
+      {
+        ...actorAuditFields(user),
+        ...requestAuditFields(context),
+        action: "TENDER_SUBMISSION_CLOSED",
+        status: relayerResult.status === "MOCK_CONFIRMED" ? "MOCK_CHAIN_CONFIRMED" : "CHAIN_CONFIRMED",
+        resourceType: "TENDER",
+        resourceId: tender.id,
+        tenderId: tender.id,
+        fromState: transition.fromState,
+        toState: transition.toState,
+        permissionChecked: transition.requiredPermission,
+        permissionResult: "ALLOWED",
+        transitionAllowed: true,
+        documentHash: closureHash,
+        ...relayerAuditFields(relayerResult),
+        metadata: {
+          comments: input.comments ?? null,
+          nextVisibleEnvelope: "TECHNICAL"
         }
       },
       tx

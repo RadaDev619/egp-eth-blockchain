@@ -5,6 +5,7 @@ import {
   amendTenderController,
   approveEvaluationController,
   approvePaymentController,
+  closeTenderController,
   createTenderController,
   getTenderController,
   ingestEgpEventController,
@@ -78,6 +79,11 @@ procurementRoutes.post(
 procurementRoutes.get("/tenders", listTendersController);
 procurementRoutes.get("/tenders/:id", getTenderController);
 procurementRoutes.post("/bid/submit", requirePermission(permissions.SUBMIT_BID, "SUBMIT_BID"), submitBidController);
+procurementRoutes.post(
+  "/tender/close",
+  requirePermission(permissions.CLOSE_TENDER, "CLOSE_TENDER"),
+  closeTenderController
+);
 procurementRoutes.post(
   "/approve/evaluation",
   requirePermission(permissions.APPROVE_EVALUATION, "APPROVE_EVALUATION"),

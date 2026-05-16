@@ -101,9 +101,9 @@ export default function CommitteeEvaluationPage() {
       <div className="mx-auto max-w-6xl space-y-6">
         <section>
           <p className="text-sm font-semibold text-emerald-800">Evaluation Reports</p>
-          <h1 className="mt-2 text-3xl font-semibold text-slate-950">Committee Evaluation</h1>
+          <h1 className="mt-2 text-3xl font-semibold text-slate-950">Committee Reports And Votes</h1>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
-            Evaluation content remains off-chain; the trust layer records report and score hashes with backend relayer evidence.
+            Technical and financial committee members submit individual report hashes. The chair finalizes the combined evaluation before award voting.
           </p>
         </section>
 
@@ -147,7 +147,7 @@ export default function CommitteeEvaluationPage() {
             <form onSubmit={(event) => void submitReport(event)} className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
               <div className="flex items-center gap-2">
                 <FileCheck2 className="h-4 w-4 text-slate-600" aria-hidden="true" />
-                <h2 className="text-base font-semibold text-slate-950">Submit Report Hash</h2>
+                <h2 className="text-base font-semibold text-slate-950">Submit Individual Report Hash</h2>
               </div>
               <div className="mt-4 grid gap-4">
                 {[
@@ -167,7 +167,7 @@ export default function CommitteeEvaluationPage() {
               </div>
               <div className="mt-5 flex justify-end">
                 <LoadingButton type="submit" loading={submitting}>
-                  Submit Evaluation Report
+                  Submit Report / Vote
                 </LoadingButton>
               </div>
             </form>

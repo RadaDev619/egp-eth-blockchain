@@ -81,9 +81,9 @@ export default function SubmitProposalPage() {
       <div className="mx-auto max-w-5xl space-y-6">
         <section>
           <p className="text-sm font-semibold text-emerald-800">Vendor Workspace</p>
-          <h1 className="mt-2 text-3xl font-semibold text-slate-950">Submit Proposal Package</h1>
+          <h1 className="mt-2 text-3xl font-semibold text-slate-950">Submit Encrypted Proposal Envelopes</h1>
           <p className="mt-2 max-w-3xl text-sm leading-6 text-slate-600">
-            The old-system simulator receives encrypted file references while the trust layer records package and envelope commitments.
+            The vendor submits separate encrypted envelopes. The trust layer records hashes, encrypted storage references, and key IDs for selective visibility.
           </p>
         </section>
 
@@ -105,6 +105,9 @@ export default function SubmitProposalPage() {
             <FileLock2 className="h-4 w-4 text-slate-600" aria-hidden="true" />
             <h2 className="text-base font-semibold text-slate-950">Encrypted Envelope Set</h2>
           </div>
+          <p className="mt-2 text-sm text-slate-600">
+            Eligibility, technical, financial, supporting-document, and tender-security envelopes are committed independently.
+          </p>
 
           <label className="mt-5 grid gap-2">
             <span className="text-sm font-semibold text-slate-800">Tender</span>

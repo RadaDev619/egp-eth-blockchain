@@ -7,8 +7,11 @@ import { ArrowRight, Boxes, FileLock2, History, Loader2, ScrollText } from "luci
 import { AppShell } from "@/components/AppShell";
 import { AuditEventTimeline } from "@/components/AuditEventTimeline";
 import { BlockchainProofCard } from "@/components/BlockchainProofCard";
+import { LoadingButton } from "@/components/LoadingButton";
 import { TenderStateBadge } from "@/components/TenderStateBadge";
 import { UnauthorizedAttemptAlert } from "@/components/UnauthorizedAttemptAlert";
+import { useSession } from "@/hooks/useSession";
+import { useToast } from "@/components/ToastProvider";
 import { auditApi, legacyEgpApi, manifestApi, proposalApi, tenderApi } from "@/services/apiClient";
 import type { AuditEvent } from "@/types/audit";
 import type { LegacyEgpRecord, ManifestStatusResponse } from "@/types/gateway";
@@ -48,13 +51,17 @@ function manifestApprovalSummary(manifest: ManifestStatusResponse | null) {
 export default function TenderDetailPage() {
   const params = useParams<{ id: string }>();
   const tenderId = params.id;
+  const { user } = useSession();
+  const { notify } = useToast();
   const [tender, setTender] = useState<Tender | null>(null);
   const [manifest, setManifest] = useState<ManifestStatusResponse | null>(null);
   const [proposalPackages, setProposalPackages] = useState<ProposalPackage[]>([]);
   const [legacyRecords, setLegacyRecords] = useState<LegacyEgpRecord[]>([]);
   const [timeline, setTimeline] = useState<AuditEvent[]>([]);
   const [loading, setLoading] = useState(true);
+  const [closing, setClosing] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const canCloseTender = user?.permissions.includes("CLOSE_TENDER") ?? false;
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -85,6 +92,33 @@ export default function TenderDetailPage() {
     void load();
   }, [load]);
 
+  async function closeSubmission() {
+    setClosing(true);
+    setError(null);
+
+    try {
+      await tenderApi.close({
+        tenderId,
+        comments: "Proposal submission window closed for demo evaluation."
+      });
+      notify({
+        type: "success",
+        title: "Proposal submission closed",
+        message: "Technical committee members can now request the technical envelope key."
+      });
+      await load();
+    } catch (closeError) {
+      setError(closeError instanceof Error ? closeError.message : "Unable to close proposal submission.");
+      notify({
+        type: "error",
+        title: "Close action blocked",
+        message: closeError instanceof Error ? closeError.message : "Unable to close proposal submission."
+      });
+    } finally {
+      setClosing(false);
+    }
+  }
+
   return (
     <AppShell>
       <div className="mx-auto max-w-7xl space-y-6">
@@ -110,6 +144,11 @@ export default function TenderDetailPage() {
             >
               Public Proof Trail
             </Link>
+            {canCloseTender && tender?.currentState === "OPEN_FOR_PROPOSALS" ? (
+              <LoadingButton loading={closing} onClick={() => void closeSubmission()}>
+                Close Submission
+              </LoadingButton>
+            ) : null}
           </div>
         </section>
 
