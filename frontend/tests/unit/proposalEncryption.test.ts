@@ -18,7 +18,7 @@ describe("proposal encryption utility", () => {
     expect(encrypted.envelopeManifestHash).toMatch(/^0x[a-f0-9]{64}$/);
     expect(encrypted.ivBase64.length).toBeGreaterThan(0);
     expect(encrypted.authTagBase64.length).toBeGreaterThan(0);
-    expect(encrypted.rawKeyBase64.length).toBeGreaterThan(0);
+    expect("rawKeyBase64" in encrypted).toBe(false);
     expect(await fileText(encrypted.encryptedFile)).not.toContain(plaintext);
     expect(encrypted.byteSize).toBeGreaterThan(file.size);
   });

@@ -127,7 +127,7 @@ vi.mock("../../src/utils/prisma.js", () => {
             }))
         };
       }),
-      findMany: vi.fn(async ({ where }) =>
+      findMany: vi.fn(async ({ where, include }) =>
         db.proposalPackages
           .filter(
             (proposalPackage) =>
@@ -136,7 +136,12 @@ vi.mock("../../src/utils/prisma.js", () => {
           )
           .map((proposalPackage) => ({
             ...proposalPackage,
-            envelopes: db.envelopes.filter((envelope) => envelope.proposalPackageId === proposalPackage.id),
+            envelopes: db.envelopes.filter(
+              (envelope) =>
+                envelope.proposalPackageId === proposalPackage.id &&
+                (!include?.envelopes?.where?.envelopeType?.in ||
+                  include.envelopes.where.envelopeType.in.includes(envelope.envelopeType))
+            ),
             vendorStakeholder: db.stakeholders.find((stakeholder) => stakeholder.id === proposalPackage.vendorStakeholderId)
           }))
       )
@@ -229,7 +234,9 @@ vi.mock("../../src/utils/prisma.js", () => {
   return { prisma };
 });
 
-const { submitProposalPackage, uploadEncryptedProposalEnvelope } = await import("../../src/services/proposalPackageService.js");
+const { getProposalPackage, listProposalPackages, submitProposalPackage, uploadEncryptedProposalEnvelope } = await import(
+  "../../src/services/proposalPackageService.js"
+);
 
 const vendor: AuthenticatedUser = {
   userId: "vendor-user",
@@ -255,6 +262,32 @@ const procurementOfficer: AuthenticatedUser = {
   employmentType: "Regular",
   role: "PROCUREMENT_OFFICER",
   permissions: [permissions.CREATE_TENDER]
+};
+
+const tecMember: AuthenticatedUser = {
+  userId: "tec-user",
+  profileId: "profile-tec",
+  holderDID: "did:key:tec",
+  employmentId: "TEC-001",
+  employeeHash: "0xtec",
+  employer: "Tender Evaluation Committee",
+  position: "TEC Member",
+  employmentType: "Committee",
+  role: "TEC_MEMBER",
+  permissions: [permissions.VIEW_ASSIGNED_TENDERS, permissions.REQUEST_KEY_RELEASE]
+};
+
+const bankOfficer: AuthenticatedUser = {
+  userId: "bank-user",
+  profileId: "profile-bank",
+  holderDID: "did:key:bank",
+  employmentId: "BANK-001",
+  employeeHash: "0xbank",
+  employer: "Demo Bank Ltd",
+  position: "Financial Institution Officer",
+  employmentType: "Regular",
+  role: "FINANCIAL_INSTITUTION_OFFICER",
+  permissions: [permissions.VIEW_ASSIGNED_TENDERS, permissions.REQUEST_KEY_RELEASE]
 };
 
 const hashes = {
@@ -305,6 +338,36 @@ function seedTender(currentState = "PUBLISHED") {
     status: "ACTIVE",
     assignedAt: new Date()
   });
+}
+
+function seedAssignment(user: AuthenticatedUser, stakeholderType = "EVALUATION_COMMITTEE") {
+  const stakeholderId = `stakeholder-${user.role.toLowerCase()}`;
+
+  db.stakeholders.push({
+    id: stakeholderId,
+    userId: user.userId,
+    employeeHash: user.employeeHash,
+    stakeholderType
+  });
+  db.assignments.push({
+    id: `assignment-${user.role.toLowerCase()}`,
+    tenderId: "tender-1",
+    stakeholderId,
+    role: user.role,
+    status: "ACTIVE",
+    assignedAt: new Date()
+  });
+}
+
+async function seedSubmittedPackage() {
+  await submitProposalPackage(
+    {
+      tenderId: "tender-1",
+      packageHash: hashes.packageHash,
+      envelopes: envelopes()
+    },
+    vendor
+  );
 }
 
 describe("proposalPackageService", () => {
@@ -465,5 +528,34 @@ describe("proposalPackageService", () => {
       byteSize: 2048
     });
     expect(JSON.stringify(db.fileReferences.at(-1))).not.toContain("financial proposal amount");
+  });
+
+  it("shows only technical-stage envelopes to assigned TEC members", async () => {
+    await seedSubmittedPackage();
+    Object.assign(db.tenders[0], { currentState: "TECHNICAL_EVALUATION" });
+    seedAssignment(tecMember);
+
+    const packages = await listProposalPackages("tender-1", tecMember);
+
+    expect(packages).toHaveLength(1);
+    expect(packages[0].envelopes.map((envelope: Record<string, unknown>) => envelope.envelopeType).sort()).toEqual([
+      "ELIGIBILITY",
+      "SUPPORTING_DOCUMENTS",
+      "TECHNICAL"
+    ]);
+  });
+
+  it("does not expose financial envelopes before financial evaluation", async () => {
+    await seedSubmittedPackage();
+    Object.assign(db.tenders[0], { currentState: "TECHNICAL_EVALUATION" });
+    seedAssignment(bankOfficer, "FINANCIAL_INSTITUTION");
+
+    const packages = await listProposalPackages("tender-1", bankOfficer);
+
+    expect(packages).toEqual([]);
+    await expect(getProposalPackage("proposal-1", bankOfficer)).rejects.toMatchObject({
+      statusCode: 403,
+      code: "AUTHORIZATION_ERROR"
+    });
   });
 });

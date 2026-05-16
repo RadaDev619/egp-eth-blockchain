@@ -5,7 +5,6 @@ export type EncryptedProposalFile = {
   ivBase64: string;
   authTagBase64: string;
   algorithm: "AES-GCM";
-  rawKeyBase64: string;
   byteSize: number;
 };
 
@@ -80,7 +79,6 @@ export async function encryptProposalFile(file: File, envelopeType: string): Pro
   );
   const authTag = encrypted.slice(Math.max(0, encrypted.byteLength - authTagLengthBytes));
   const encryptedFileHash = await sha256Hex(encrypted);
-  const rawKey = new Uint8Array(await crypto.subtle.exportKey("raw", key));
   const ivBase64 = bytesToBase64(iv);
   const authTagBase64 = bytesToBase64(authTag);
   const envelopeManifestHash = await sha256Hex(
@@ -101,7 +99,6 @@ export async function encryptProposalFile(file: File, envelopeType: string): Pro
     ivBase64,
     authTagBase64,
     algorithm: "AES-GCM",
-    rawKeyBase64: bytesToBase64(rawKey),
     byteSize: encrypted.byteLength
   };
 }

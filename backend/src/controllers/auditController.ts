@@ -15,7 +15,19 @@ const auditQuerySchema = z.object({
     "CHAIN_FAILED",
     "MOCK_CHAIN_CONFIRMED"
   ]).optional(),
-  actorRole: z.enum(["PROCUREMENT_OFFICER", "VENDOR", "EVALUATOR", "FINANCE_OFFICER", "AUDITOR"]).optional(),
+  actorRole: z
+    .enum([
+      "PROCUREMENT_OFFICER",
+      "VENDOR",
+      "EVALUATOR",
+      "FINANCE_OFFICER",
+      "AUDITOR",
+      "TEC_MEMBER",
+      "TEC_CHAIR",
+      "APPROVING_OFFICER",
+      "FINANCIAL_INSTITUTION_OFFICER"
+    ])
+    .optional(),
   actorEmployeeHash: z.string().optional(),
   txHash: z.string().optional(),
   fromDate: z.coerce.date().optional(),

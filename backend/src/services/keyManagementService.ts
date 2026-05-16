@@ -476,8 +476,7 @@ export async function releaseEnvelopeKey(input: ReleaseEnvelopeKeyInput, user: A
           requesterEmployeeHash: request.requesterEmployeeHash,
           requesterRole: request.requesterRole,
           policyId: policy.id,
-          keyReleaseHash: releaseHash,
-          keyMaterialReference
+          keyReleaseHash: releaseHash
         }
       },
       tx

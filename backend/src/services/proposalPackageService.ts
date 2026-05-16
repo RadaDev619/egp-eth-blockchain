@@ -1,4 +1,4 @@
-import type { BlockchainStatus, Prisma, ProposalEnvelopeType } from "@prisma/client";
+import type { BlockchainStatus, Prisma, ProposalEnvelopeType, Role, TenderState } from "@prisma/client";
 import { appendAuditEvent, actorAuditFields } from "./auditService.js";
 import { assertSecureGatewayAction, SecureGatewayAction } from "./secureProcurementGateway.js";
 import type { AuthenticatedUser } from "../types/domain.js";
@@ -304,6 +304,54 @@ function assertVendorOwnsPackage(user: AuthenticatedUser, proposalPackage: { ven
   if (proposalPackage.vendorEmployeeHash !== user.employeeHash) {
     throw new AuthorizationError("Vendor can only modify their own proposal package.");
   }
+}
+
+const allEnvelopeTypes: ProposalEnvelopeType[] = [
+  "ELIGIBILITY",
+  "FINANCIAL",
+  "SUPPORTING_DOCUMENTS",
+  "TECHNICAL",
+  "TENDER_SECURITY"
+];
+
+function visibleEnvelopeTypes(role: Role, tenderState: TenderState): ProposalEnvelopeType[] {
+  if (role === "AUDITOR") {
+    return allEnvelopeTypes;
+  }
+
+  if ((role === "TEC_MEMBER" || role === "TEC_CHAIR") && (tenderState === "TECHNICAL_EVALUATION" || tenderState === "FINANCIAL_EVALUATION")) {
+    return ["ELIGIBILITY", "SUPPORTING_DOCUMENTS", "TECHNICAL"];
+  }
+
+  if (role === "FINANCIAL_INSTITUTION_OFFICER" && tenderState === "FINANCIAL_EVALUATION") {
+    return ["FINANCIAL"];
+  }
+
+  if (role === "FINANCIAL_INSTITUTION_OFFICER" && tenderState === "AWARD_APPROVED") {
+    return ["TENDER_SECURITY"];
+  }
+
+  return [];
+}
+
+async function canViewProposalMetadata(tenderId: string, user: AuthenticatedUser) {
+  if (user.role === "AUDITOR") {
+    return true;
+  }
+
+  const assignment = await prisma.tenderRoleAssignment.findFirst({
+    where: {
+      tenderId,
+      role: user.role,
+      status: "ACTIVE",
+      stakeholder: {
+        OR: [{ userId: user.userId }, { employeeHash: user.employeeHash }]
+      }
+    },
+    select: { id: true }
+  });
+
+  return Boolean(assignment);
 }
 
 async function upsertEnvelope(
@@ -672,19 +720,37 @@ export async function uploadEncryptedProposalEnvelope(
 }
 
 export async function listProposalPackages(tenderId: string, user: AuthenticatedUser) {
-  const where =
-    user.role === "VENDOR"
+  const tender = await prisma.tender.findUnique({
+    where: { id: tenderId },
+    select: { currentState: true }
+  });
+
+  if (!tender) {
+    throw new NotFoundError("Tender was not found.");
+  }
+
+  const isVendor = user.role === "VENDOR";
+  const envelopeTypes = isVendor ? allEnvelopeTypes : visibleEnvelopeTypes(user.role, tender.currentState);
+
+  if (!isVendor && envelopeTypes.length === 0) {
+    return [];
+  }
+
+  if (!isVendor && !(await canViewProposalMetadata(tenderId, user))) {
+    throw new AuthorizationError("Tender assignment is required to view proposal envelope metadata.");
+  }
+
+  return prisma.proposalPackage.findMany({
+    where: isVendor
       ? {
           tenderId,
           vendorEmployeeHash: user.employeeHash
         }
-      : { tenderId };
-
-  return prisma.proposalPackage.findMany({
-    where,
+      : { tenderId },
     orderBy: { createdAt: "asc" },
     include: {
       envelopes: {
+        where: { envelopeType: { in: envelopeTypes } },
         orderBy: { envelopeType: "asc" },
         include: {
           fileReferences: true
@@ -700,7 +766,21 @@ export async function getProposalPackage(proposalPackageId: string, user: Authen
 
   if (user.role === "VENDOR") {
     assertVendorOwnsPackage(user, proposalPackage);
+    return proposalPackage;
   }
 
-  return proposalPackage;
+  const envelopeTypes = visibleEnvelopeTypes(user.role, proposalPackage.tender.currentState);
+
+  if (envelopeTypes.length === 0) {
+    throw new AuthorizationError("Proposal package metadata is not visible for this role at the current tender stage.");
+  }
+
+  if (!(await canViewProposalMetadata(proposalPackage.tenderId, user))) {
+    throw new AuthorizationError("Tender assignment is required to view proposal envelope metadata.");
+  }
+
+  return {
+    ...proposalPackage,
+    envelopes: proposalPackage.envelopes.filter((envelope) => envelopeTypes.includes(envelope.envelopeType))
+  };
 }

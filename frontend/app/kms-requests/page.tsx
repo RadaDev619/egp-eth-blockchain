@@ -256,7 +256,9 @@ export default function KmsRequestsPage() {
                             {request.requesterRole} requested at {request.requestedTenderState}
                           </p>
                           {request.keyMaterialReference ? (
-                            <p className="mt-2 break-all text-xs font-medium text-slate-700">{request.keyMaterialReference}</p>
+                            <p className="mt-2 break-all text-xs font-medium text-slate-700">
+                              MVP key reference recorded: {request.keyMaterialReference}
+                            </p>
                           ) : null}
                         </div>
                         <LoadingButton
