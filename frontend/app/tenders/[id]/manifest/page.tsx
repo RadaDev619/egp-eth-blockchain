@@ -24,6 +24,9 @@ export default function TenderManifestPage() {
   const [busyAction, setBusyAction] = useState<string | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [signatureHash, setSignatureHash] = useState(nowHash("publication-signature"));
+  const approvals = status?.approvals ?? status?.manifest?.publicationApprovals ?? [];
+  const approvedCount = status?.approvedCount ?? status?.approvalCount ?? 0;
+  const publicationThreshold = status?.publicationThreshold ?? status?.manifest?.publicationThreshold ?? 0;
 
   const load = useCallback(async () => {
     setLoading(true);
@@ -116,7 +119,7 @@ export default function TenderManifestPage() {
                   <div>
                     <dt className="font-medium text-slate-500">Threshold</dt>
                     <dd className="mt-1 font-semibold text-slate-950">
-                      {status.approvedCount}/{status.publicationThreshold} approvals
+                      {approvedCount}/{publicationThreshold} approvals
                     </dd>
                   </div>
                   <div className="md:col-span-2">
@@ -170,10 +173,10 @@ export default function TenderManifestPage() {
             <section className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
               <h2 className="text-base font-semibold text-slate-950">Publication Approvals</h2>
               <div className="mt-4 space-y-3">
-                {status.approvals.length === 0 ? (
+                {approvals.length === 0 ? (
                   <p className="text-sm text-slate-600">No publication approvals recorded.</p>
                 ) : (
-                  status.approvals.map((approval) => (
+                  approvals.map((approval) => (
                     <article key={approval.id} className="rounded-md border border-slate-200 p-3">
                       <p className="text-sm font-semibold text-slate-950">{approval.approverRole}</p>
                       <p className="mt-1 text-xs text-slate-500">{approval.decision} - {approval.blockchainStatus}</p>

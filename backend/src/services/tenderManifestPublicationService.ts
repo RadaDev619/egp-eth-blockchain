@@ -675,13 +675,18 @@ export async function getTenderManifestStatus(tenderId: string, client: Manifest
 
   const manifest = tender.manifests[0] ?? null;
   const approvalCount = manifest?.publicationApprovals.filter((approval) => approval.decision === "APPROVED").length ?? 0;
+  const publicationReady = manifest ? approvalCount >= manifest.publicationThreshold : false;
+  const approvals = manifest?.publicationApprovals ?? [];
 
   return {
     tender,
     manifest,
+    approvals,
     approvalCount,
+    approvedCount: approvalCount,
     publicationThreshold: manifest?.publicationThreshold ?? null,
-    publicationReady: manifest ? approvalCount >= manifest.publicationThreshold : false,
+    publicationReady,
+    published: publicationReady,
     currentState: tender.currentState
   };
 }

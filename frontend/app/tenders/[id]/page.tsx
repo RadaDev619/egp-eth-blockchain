@@ -34,6 +34,17 @@ function formatDate(value?: string | null) {
   }).format(new Date(value));
 }
 
+function manifestApprovalSummary(manifest: ManifestStatusResponse | null) {
+  if (!manifest) {
+    return "No manifest response";
+  }
+
+  const approvedCount = manifest.approvedCount ?? manifest.approvalCount ?? 0;
+  const publicationThreshold = manifest.publicationThreshold ?? manifest.manifest?.publicationThreshold ?? 0;
+
+  return `${approvedCount}/${publicationThreshold} publication approvals`;
+}
+
 export default function TenderDetailPage() {
   const params = useParams<{ id: string }>();
   const tenderId = params.id;
@@ -120,9 +131,7 @@ export default function TenderDetailPage() {
               <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
                 <p className="text-sm font-semibold text-slate-500">Manifest</p>
                 <p className="mt-3 text-sm font-semibold text-slate-950">{manifest?.manifest?.status ?? "Not committed"}</p>
-                <p className="mt-1 text-xs text-slate-500">
-                  {manifest ? `${manifest.approvedCount}/${manifest.publicationThreshold} publication approvals` : "No manifest response"}
-                </p>
+                <p className="mt-1 text-xs text-slate-500">{manifestApprovalSummary(manifest)}</p>
               </div>
               <div className="rounded-lg border border-slate-200 bg-white p-5 shadow-sm">
                 <p className="text-sm font-semibold text-slate-500">Proposal Packages</p>

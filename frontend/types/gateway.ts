@@ -19,6 +19,7 @@ export type TenderManifest = {
   blockchainStatus: BlockchainStatus;
   createdAt: string;
   updatedAt: string;
+  publicationApprovals?: TenderPublicationApproval[];
 };
 
 export type TenderPublicationApproval = {
@@ -36,10 +37,12 @@ export type TenderPublicationApproval = {
 export type ManifestStatusResponse = {
   tender: Tender;
   manifest: TenderManifest | null;
-  approvals: TenderPublicationApproval[];
-  approvedCount: number;
-  publicationThreshold: number;
-  published: boolean;
+  approvals?: TenderPublicationApproval[];
+  approvalCount?: number;
+  approvedCount?: number;
+  publicationThreshold?: number | null;
+  publicationReady?: boolean;
+  published?: boolean;
 };
 
 export type CommitteeDashboard = {
